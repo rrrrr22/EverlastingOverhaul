@@ -57,7 +57,7 @@ public class Tween<T> where T : struct
 
     public Tween<T> SetProperties(T start, T finish, TweenEaseType type, int duration, bool run = false)
     {
-        currentDuration = new(this, duration, run);
+        currentDuration = new(duration, run);
         this.start = start;
         this.finish = finish;
         easeType = type;

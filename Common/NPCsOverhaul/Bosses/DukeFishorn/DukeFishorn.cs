@@ -350,6 +350,7 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
             {
                 npc.rotation = npc.DirectionTo(Target.Center).ToRotation() + (npc.spriteDirection == 1 ? MathHelper.Pi: 0);
                 npc.spriteDirection = npc.direction * -1;
+                npcHandler.currentFrame = 7;
                 if (fireDelay < 140)
                 {
                     npc.Center -= npc.DirectionFrom(Target.Center) * 15f;

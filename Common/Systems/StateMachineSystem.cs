@@ -1,5 +1,4 @@
 ﻿using EverlastingOverhaul.Common.Graphics;
-using EverlastingOverhaul.Common.Graphics;
 using EverlastingOverhaul.Common.NPCsOverhaul;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -95,8 +94,8 @@ namespace EverlastingOverhaul.Common.Systems
         public static AIState NewAIState(NPC npc, int type)
         {
             AIState state = (AIState)AIStates[type].MemberwiseClone();
-            state.stateCounter = new(npc, -1, false);
-            state.npc = npc;
+            state.stateCounter = new(-1, false);
+            state.npcWhoAmI = npc.whoAmI;
             state.SetDefaults();
             return state;
         }
@@ -151,8 +150,21 @@ namespace EverlastingOverhaul.Common.Systems
             npc.aiAction = state;
             changeState.Invoke(this);
         }
-        public NPC npc { get; set; } = null;
-        public NPCReworkerFSM npcHandler = null;
+        public int npcWhoAmI = -1;
+        public NPC npc 
+        { 
+            get 
+            {
+                return Main.npc[npcWhoAmI];      
+            }
+        }
+        public NPCReworkerFSM npcHandler
+        {
+            get
+            {
+                return Main.npc[npcWhoAmI].GetGlobalNPC<NPCReworkerFSM>();
+            }
+        }
         public virtual void OnEntered(int oldState) { }
         public virtual void OnStateUpdate(CommonNPCInfo info) { }
         public virtual void OnExited(int newState) { }
@@ -185,7 +197,7 @@ namespace EverlastingOverhaul.Common.Systems
     {
         public NPCAIStates(NPC npc, params int[] states)
         {
-            this.npc = npc;
+            npcWhoAmI = npc.whoAmI;
             foreach (int type in states)
             {
                 this.states[type] = AIState.NewAIState(npc, type);
@@ -244,7 +256,14 @@ namespace EverlastingOverhaul.Common.Systems
         }
 
         public AIState currentState = null;
-        public NPC npc = null;
+        public NPC npc
+        {
+            get
+            {
+                return Main.npc[npcWhoAmI];
+            }
+        }
+        public int npcWhoAmI = -1;
 
     }
 

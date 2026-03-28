@@ -14,7 +14,7 @@ namespace EverlastingOverhaul.Common.Systems
             for (int i = 0; i < timers.Count; i++)
             {
                 timers[i].Update();
-                if (timers[i].state == FrameCounterState.Finished || timers[i].holder == null)
+                if (timers[i].state == FrameCounterState.Finished)
                 {
                     timers.RemoveAt(i);
                 }
@@ -41,7 +41,7 @@ namespace EverlastingOverhaul.Common.Systems
         public Action onFinsihed;
 
         public float Progress => isCounter ? (float)currentFramesPassedOrRemained / maxOrStartingValue : 1f - (float)currentFramesPassedOrRemained / maxOrStartingValue;
-        public FrameCounter(object holder, int value = 60, bool startAutomatically = true)
+        public FrameCounter(int value = 60, bool startAutomatically = true)
         {
             if (value != -1)
                 maxOrStartingValue = value;
@@ -51,7 +51,6 @@ namespace EverlastingOverhaul.Common.Systems
                 maxOrStartingValue = 1;
             }
 
-            this.holder = holder;
             if (startAutomatically)
                 Start();
         }
