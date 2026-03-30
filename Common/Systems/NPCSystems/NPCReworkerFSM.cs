@@ -1,7 +1,7 @@
 ﻿using EverlastingOverhaul.Common.Graphics;
-using EverlastingOverhaul.Common.Systems;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Mono.Cecil.Cil;
 using Steamworks;
 using System.IO;
 using Terraria;
@@ -10,7 +10,7 @@ using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace EverlastingOverhaul.Common.NPCsOverhaul;
+namespace EverlastingOverhaul.Common.Systems.NPCReworker;
 public class NPCReworkerFSM : GlobalNPC, IZDepth {
     public int currentState
     {
@@ -80,17 +80,22 @@ public class NPCReworkerFSM : GlobalNPC, IZDepth {
         PreStateUpdate();
 		if(states != null)
 			states.Update();
-        //zDepth = MathF.Sin((float)Main.timeForVisualEffects * 0.01f) * 2 + 2;
-
         PostStateUpdate();
         return false;
     }
 
-
 	public override bool PreDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
 		if(states != null)
-			states.currentState.StatePreDraw(NPCSpriteDrawData(npc,drawColor,screenPos),spriteBatch,screenPos,drawColor);
-		return base.PreDraw(npc, spriteBatch, screenPos, drawColor);
+        {
+            var sprite = states.currentSprite;
+            sprite.position -= screenPos;
+            sprite.color = drawColor;
+            if (states.currentState.StatePreDraw(ref sprite, spriteBatch, screenPos, drawColor)) 
+            {
+                sprite.Draw(spriteBatch);
+            }
+        }
+        return false;
 	}
     public override void PostDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
     {
@@ -105,14 +110,28 @@ public class NPCReworkerFSM : GlobalNPC, IZDepth {
 	public override bool AppliesToEntity(NPC entity, bool lateInstantiation) {
 		return entity.type == VanillaNPCType;
 	}
-	// This uses custom animation system instead of the weird vanilla system, this aims to be faster and easier to setup for npc reworking purpose
+    // BACKWARDS COMPAT ONLY, DONT USE IT, USE THE SYSTEMS INSIDE AIState Class!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 	public virtual bool UseCustomAnimation() => false;
 	public int currentFrame = 0;
 	public virtual int frameHeight => 128;
 	public virtual int startingFrame => 0;
 	public virtual int animationSpeed => 14;
 	public virtual int maxFrames => 0;
-	public Rectangle frameRect = new();
+    public void UpdateAnimation(NPC npc)
+    {
+        if (++npc.frameCounter % animationSpeed == 0)
+            if (++currentFrame > maxFrames - startingFrame)
+                currentFrame = startingFrame;
+    }
+    public DrawData NPCSpriteDrawData(NPC npc, Color drawColor, Vector2 screenPos)
+    {
+        if (UseCustomAnimation())
+            return new DrawData(TextureAssets.Npc[VanillaNPCType].Value, npc.Center - screenPos, frameRect, drawColor, npc.rotation, new Vector2(TextureAssets.Npc[VanillaNPCType].Width() / 2f, frameHeight / 2f), npc.scale, npc.spriteDirection == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally | SpriteEffects.FlipHorizontally);
+        return new DrawData(TextureAssets.Npc[VanillaNPCType].Value, npc.Center - screenPos, npc.frame, drawColor, npc.rotation, new Vector2(TextureAssets.Npc[VanillaNPCType].Width() / 2f, frameHeight / 2f), npc.scale, npc.spriteDirection == 1 ? SpriteEffects.None : SpriteEffects.FlipVertically | SpriteEffects.FlipHorizontally);
+
+    }
+    public Rectangle frameRect = new();
 	public override void FindFrame(NPC npc, int frameHeight) 
 	{
 		if(UseCustomAnimation())
@@ -120,19 +139,7 @@ public class NPCReworkerFSM : GlobalNPC, IZDepth {
 		else
 			base.FindFrame(npc, frameHeight);
 	}
-	public void UpdateAnimation(NPC npc)
-	{
-		if(++npc.frameCounter % animationSpeed == 0)
-			if(++currentFrame > maxFrames - startingFrame)
-				currentFrame = startingFrame;
-	}
-	public DrawData NPCSpriteDrawData(NPC npc, Color drawColor, Vector2 screenPos)
-	{
-		if(UseCustomAnimation())
-			return new DrawData(TextureAssets.Npc[VanillaNPCType].Value,npc.Center - screenPos,frameRect,drawColor,npc.rotation,new Vector2(TextureAssets.Npc[VanillaNPCType].Width() / 2f,frameHeight / 2f),npc.scale,npc.spriteDirection == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally | SpriteEffects.FlipHorizontally);
-		return new DrawData(TextureAssets.Npc[VanillaNPCType].Value,npc.Center - screenPos,npc.frame,drawColor,npc.rotation,new Vector2(TextureAssets.Npc[VanillaNPCType].Width() / 2f,frameHeight / 2f),npc.scale,npc.spriteDirection == 1 ? SpriteEffects.None : SpriteEffects.FlipVertically | SpriteEffects.FlipHorizontally);
-	
-	}
+
 
 }
 

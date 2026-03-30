@@ -1,6 +1,7 @@
 ﻿using EverlastingOverhaul.Common.Graphics;
 using EverlastingOverhaul.Common.Graphics.Primitives;
 using EverlastingOverhaul.Common.Systems;
+using EverlastingOverhaul.Common.Systems.NPCReworker;
 using EverlastingOverhaul.Common.Utils;
 using EverlastingOverhaul.Content.Particles;
 using Microsoft.Xna.Framework;
@@ -8,7 +9,9 @@ using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Terraria;
+using Terraria.Audio;
 using Terraria.GameContent;
 using Terraria.Graphics;
 using Terraria.Graphics.CameraModifiers;
@@ -26,47 +29,22 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
         public override int startingFrame => 0;
         public override int animationSpeed => 4;
         public override int maxFrames => states != null && states.currentState.type == AIState.StateType<Duke_Spawn>() ? 7 : 5;
-        public override int[] RegisterStates() => [AIState.StateType<DukeSuperTornado>(), AIState.StateType<Boss_Despawn>(), AIState.StateType<Duke_Dash>(), AIState.StateType<Duke_Circle1>(), AIState.StateType<Duke_SuperDash>(), AIState.StateType<DukeSuperTornado>()];
+        public override int[] RegisterStates() => 
+            [AIState.StateType<Duke_Super_Tornado>(),
+            AIState.StateType<Boss_Despawn_State>(),
+            AIState.StateType<Duke_Dash>(),
+            AIState.StateType<Duke_Circle1>(),
+            AIState.StateType<Duke_SuperDash>(),
+            AIState.StateType<Duke_Super_Tornado>(),
+            AIState.StateType<Duke_Phase2_Transition>(),
+            AIState.StateType<Duke_Phase3_Transition>()
+        ];
         public override void ReworkedAI(ref NPC npc)
         {
             base.ReworkedAI(ref npc);
             states.Update();
         }
 
-    }
-    public class DukeSuperTornado : AIState 
-    {
-        float zDepths = 1;
-        Vector2 startingPos = Vector2.Zero;
-        public override void OnEntered(int oldState)
-        {
-            base.OnEntered(oldState);
-            PunchCameraModifier p = new(npc.Center, Main.rand.NextVector2Circular(3, 3), 15, 10, 60, 100000);
-            Main.instance.CameraModifiers.Add(p);
-            startingPos = Target.Center - new Vector2(0,250);
-            NPCReworkerFSM.NewProjectileWithMPCheck(npc.GetSource_FromAI(), startingPos, Vector2.Zero, ModContent.ProjectileType<Dukenado>(), 100, 0);
-
-        }
-
-        public override void OnStateUpdate(CommonNPCInfo info)
-        {
-            base.OnStateUpdate(info);
-            npc.velocity *= 0.94f;
-            npc.spriteDirection = npc.Center.X > startingPos.X ? 1 : -1;
-            if (counter == 180)
-            {
-                npc.velocity = new Vector2(Target.Center.X > npc.Center.X ? -48 : 48, 0);
-            }
-
-            if (counter < 180)
-                npc.Center = Vector2.Lerp(npc.Center, startingPos + new Vector2(MathF.Cos(counter * MathHelper.Lerp(0.1f, 0.3f, MathHelper.Clamp(counter / 160f, 0, 1))) * 256, MathF.Sin(counter * MathHelper.Lerp(0.1f, 0.3f, MathHelper.Clamp(counter / 160f, 0, 1))) * 64), 0.7f);
-
-            if (counter == 240)
-            {
-                ChangeState(StateType<Duke_Dash>());
-
-            }
-        }
     }
     public class DukeVortexParticle : Particle
     {
@@ -296,26 +274,120 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
 
 
     }
+    public class Duke_AIState : AIState
+    {
+        public override void SetDefaults()
+        {
+            base.SetDefaults();
+            UpdateSpriteFields(0, 6);
+        }
+        public override void OnPostStateUpdate()
+        {
+            if (npc.ai[0] == 0 && npc.life <= npc.lifeMax / 2f) // 50%
+            {
+                npc.ai[0]++;
+                preStateChangeState = StateType<Duke_Phase2_Transition>();
+                Main.NewText("The Winds grows stronger...");
+                
+            } 
+            if (npc.ai[0] == 1 && npc.life <= npc.lifeMax / 4f) // 25%
+            {
+                npc.ai[0]++;
+                preStateChangeState = StateType<Duke_Phase3_Transition>();
+                Main.NewText("You suddenly feel like drowning...");
+            }
+        }
+    }
+    public class Duke_Phase2_Transition : Duke_AIState 
+    {
+        int delay = 300;
+        public override void OnStateUpdate(CommonNPCInfo info)
+        {
+            delay--;
+            npc.velocity *= 0.98f;
+            if(delay == 150)
+            {
+                npcTexture = TextureAssets.DukeFishron;
+                SoundEngine.PlaySound(SoundID.NPCDeath29, npc.Center);
+                PunchCameraModifier p = new(npc.Center, Main.rand.NextVector2Circular(3, 3), 15, 10, 60, 100000);
+                Main.instance.CameraModifiers.Add(p);
+            }
+            if (delay == 0)
+                ChangeState(StateType<Duke_Dash>());
+        }
 
-    public class Duke_Spawn : AIState
+    }
+    public class Duke_Phase3_Transition : Duke_AIState
+    {
+        int delay = 300;
+        public override void OnStateUpdate(CommonNPCInfo info)
+        {
+            delay--;
+            npc.velocity *= 0.98f;
+            if (delay == 150)
+            {
+                npcTexture = TextureAssets.DukeFishron;
+                SoundEngine.PlaySound(SoundID.NPCDeath29, npc.Center);
+                PunchCameraModifier p = new(npc.Center, Main.rand.NextVector2Circular(3, 3), 15, 10, 60, 100000);
+                Main.instance.CameraModifiers.Add(p);
+            }
+            if (delay == 0)
+                ChangeState(StateType<Duke_Dash>());
+        }
+
+    }
+    public class Duke_Super_Tornado : Duke_AIState
     {
 
+        Vector2 startingPos = Vector2.Zero;
         public override void OnEntered(int oldState)
         {
+            base.OnEntered(oldState);
+            PunchCameraModifier p = new(npc.Center, Main.rand.NextVector2Circular(3, 3), 15, 10, 60, 100000);
+            Main.instance.CameraModifiers.Add(p);
+            startingPos = Target.Center - new Vector2(0, 250);
+            NPCReworkerFSM.NewProjectileWithMPCheck(npc.GetSource_FromAI(), startingPos, Vector2.Zero, ModContent.ProjectileType<Dukenado>(), 100, 0);
 
         }
 
         public override void OnStateUpdate(CommonNPCInfo info)
         {
-            npc.velocity = -Vector2.UnitY * 2;
+            base.OnStateUpdate(info);
+            npc.velocity *= 0.94f;
+            npc.direction = npc.Center.X > startingPos.X ? 1 : -1;
+            if (counter == 180)
+            {
+                npc.velocity = new Vector2(Target.Center.X > npc.Center.X ? -48 : 48, 0);
+            }
 
+            if (counter < 180)
+                npc.Center = Vector2.Lerp(npc.Center, startingPos + new Vector2(MathF.Cos(counter * MathHelper.Lerp(0.1f, 0.3f, MathHelper.Clamp(counter / 160f, 0, 1))) * 256, MathF.Sin(counter * MathHelper.Lerp(0.1f, 0.3f, MathHelper.Clamp(counter / 160f, 0, 1))) * 64), 0.7f);
+
+            if (counter == 240)
+            {
+                ChangeState(StateType<Duke_Dash>());
+
+            }
+        }
+    }
+    public class Duke_Spawn : Duke_AIState
+    {
+
+        public override void OnEntered(int oldState)
+        {
+            UpdateSpriteFields(0,7);
+        }
+
+        public override void OnStateUpdate(CommonNPCInfo info)
+        {
+            npc.velocity = -Vector2.UnitY * 2;
             if (counter == 14 * 4)
                 ChangeState(StateType<Duke_Dash>());
         }
 
     }
 
-    public class Duke_Circle1 : AIState
+    public class Duke_Circle1 : Duke_AIState
     {
         int fireDelay = 0;
         int recoilCounter = 0;
@@ -323,6 +395,7 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
         float currentCircleRot = 0;
         int fireCounter = 0;
         int rotDir = 1;
+
         public override void OnEntered(int oldState)
         {
             base.OnEntered(oldState);
@@ -350,7 +423,7 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
             {
                 npc.rotation = npc.DirectionTo(Target.Center).ToRotation() + (npc.spriteDirection == 1 ? MathHelper.Pi: 0);
                 npc.spriteDirection = npc.direction * -1;
-                npcHandler.currentFrame = 7;
+                currentFrame = 6;
                 if (fireDelay < 140)
                 {
                     npc.Center -= npc.DirectionFrom(Target.Center) * 15f;
@@ -366,6 +439,8 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
 
             if(fireCounter >= 12) 
             {
+                fireDelay = 0;
+                recoilCounter = 0;
                 fireCounter = 0;
                 ChangeState(StateType<Duke_Dash>());
             }
@@ -373,11 +448,12 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
         }
 
     }
-    public class Duke_SuperDash : AIState
+    public class Duke_SuperDash : Duke_AIState
     {
 
         int dashDelay = 0;
         Vector2 offset = Vector2.Zero;
+
         public override void OnEntered(int oldState)
         {
             base.OnEntered(oldState);
@@ -436,12 +512,13 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
         }
 
     }
-    public class Duke_Dash : AIState
+    public class Duke_Dash : Duke_AIState
     {
 
         int dashCounter = 0;
         int dashDelay = 0;
         Vector2 offset = Vector2.Zero;
+
         public override void OnStateUpdate(CommonNPCInfo info)
         {
 

@@ -3,7 +3,6 @@ using EverlastingOverhaul.Common.Graphics.AnimationSystems;
 using EverlastingOverhaul.Common.Graphics.Primitives;
 using EverlastingOverhaul.Common.Graphics.Structs.QuadStructs;
 using EverlastingOverhaul.Common.Graphics.Structs.TrailStructs;
-using EverlastingOverhaul.Common.Systems;
 using EverlastingOverhaul.Common.Systems.ObjectSystem;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -16,6 +15,7 @@ using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 using EverlastingOverhaul.Common.ItemOverhaul;
+using EverlastingOverhaul.Common.Systems.NPCReworker;
 
 namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.EyeofCuthulu;
 public class EyeofCuthulu : NPCReworkerFSM {
@@ -40,7 +40,7 @@ public class EyeofCuthulu : NPCReworkerFSM {
 			AIState.StateType<EoC_RandomTeleport>(),
 			AIState.StateType<EoC_DashAndFire>(),
 			AIState.StateType<EoC_ParryStun>(),
-			AIState.StateType<Boss_Despawn>(),
+			AIState.StateType<Boss_Despawn_State>(),
 			AIState.StateType<EoC_CircleAroundTarget>(),
 			AIState.StateType<EoC_SwarmShield>()];
 
@@ -404,7 +404,7 @@ public class EoC_Idle : AIState {
 		if (npc.life <= npc.lifeMax / 2f && !npc.GetGlobalNPC<EyeofCuthulu>().isPhase2)
 			ChangeState(StateType<EoC_GoingPhase2>());
 
-		if (ChangeStateIfTargetNull(StateType<Boss_Despawn>()))
+		if (ChangeStateIfTargetNull(StateType<Boss_Despawn_State>()))
 			return;
 		npc.direction = Target.Center.X > npc.Center.X ? -1 : 1;
 		npc.rotation = npc.rotation.AngleTowards(npc.DirectionTo(Target.Center).ToRotation(), MathHelper.Pi / 30f);
@@ -451,7 +451,7 @@ public class EoC_Dashing : AIState {
 	}
 	public override void OnStateUpdate(CommonNPCInfo info) {
 
-		if (ChangeStateIfTargetNull(StateType<Boss_Despawn>()))
+		if (ChangeStateIfTargetNull(StateType<Boss_Despawn_State>()))
 			return;
 		npc.velocity = targetVel * (1f - (float)counter / 60);
 		npc.rotation = npc.rotation.AngleTowards(Target.DirectionFrom(npc.Center).ToRotation(), (float)counter / 60);
@@ -496,7 +496,7 @@ public class EoC_Projectile : AIState {
 	public override void OnStateUpdate(CommonNPCInfo info) {
 		npc.velocity *= 0.92f;
 
-		if (ChangeStateIfTargetNull(StateType<Boss_Despawn>()))
+		if (ChangeStateIfTargetNull(StateType<Boss_Despawn_State>()))
 			return;
 		if (counter < 20)
 			npc.rotation = npc.DirectionTo(Target.Center).ToRotation();
@@ -527,7 +527,7 @@ public class EoC_RandomTeleport : AIState {
 	Vector2 sideTarget;
 	public override void OnEntered(int oldState) {
 		prevState = oldState;
-		if (ChangeStateIfTargetNull(StateType<Boss_Despawn>()))
+		if (ChangeStateIfTargetNull(StateType<Boss_Despawn_State>()))
 			return;
 		if (npc.Center.X < Target.Center.X)
 			sideTarget = new Vector2(400, 0);
@@ -540,7 +540,7 @@ public class EoC_RandomTeleport : AIState {
 	public override void OnStateUpdate(CommonNPCInfo info) {
 		npc.velocity *= 0;
 
-		if (ChangeStateIfTargetNull(StateType<Boss_Despawn>()))
+		if (ChangeStateIfTargetNull(StateType<Boss_Despawn_State>()))
 			return;
 
 		if (counter == 30) {
@@ -575,7 +575,7 @@ public class EoC_GoingPhase2 : AIState {
 public class EoC_DashTeleport : AIState {
 	int tpCount = 0;
 	public override void OnEntered(int oldState) {
-		if (ChangeStateIfTargetNull(StateType<Boss_Despawn>()))
+		if (ChangeStateIfTargetNull(StateType<Boss_Despawn_State>()))
 			return;
 
 		if (oldState == StateType<EoC_RandomTeleport>())
@@ -609,7 +609,7 @@ public class EoC_DashAndFire : AIState {
 	Vector2 sideTarget = Vector2.Zero;
 	int dashCount = 0;
 	public override void OnEntered(int oldState) {
-		if (ChangeStateIfTargetNull(StateType<Boss_Despawn>()))
+		if (ChangeStateIfTargetNull(StateType<Boss_Despawn_State>()))
 			return;
 
 		if (npc.Center.X < Target.Center.X)
@@ -623,7 +623,7 @@ public class EoC_DashAndFire : AIState {
 			dashCount = 0;
 	}
 	public override void OnStateUpdate(CommonNPCInfo info) {
-		if (ChangeStateIfTargetNull(StateType<Boss_Despawn>()))
+		if (ChangeStateIfTargetNull(StateType<Boss_Despawn_State>()))
 			return;
 
 		npc.velocity *= 0.92f;
@@ -664,7 +664,7 @@ public class EoC_ParryStun : AIState {
 	}
 	public override void OnStateUpdate(CommonNPCInfo info) {
 		npc.velocity *= 0.95f;
-		if (ChangeStateIfTargetNull(StateType<Boss_Despawn>()))
+		if (ChangeStateIfTargetNull(StateType<Boss_Despawn_State>()))
 			return;
 		npc.rotation += 1f * npc.direction * ModUtils.InExpo(1f - (float)counter / 100, 4f);
 		if (counter == 160)
@@ -679,13 +679,13 @@ public class EoC_CircleAroundTarget : AIState {
 	public override void OnEntered(int oldState) {
 		ModObject.NewModObject(npc.Center, Vector2.Zero, ModObject.GetModObjectType<EyeRiftObject>());
 		npc.velocity = Vector2.Zero;
-		if (ChangeStateIfTargetNull(StateType<Boss_Despawn>()))
+		if (ChangeStateIfTargetNull(StateType<Boss_Despawn_State>()))
 			return;
 		targetPos = Target.Center;
 		dir = npc.direction;
 	}
 	public override void OnStateUpdate(CommonNPCInfo info) {
-		if (ChangeStateIfTargetNull(StateType<Boss_Despawn>()))
+		if (ChangeStateIfTargetNull(StateType<Boss_Despawn_State>()))
 			return;
 
 		if (counter == 30) {
@@ -713,7 +713,7 @@ public class EoC_SwarmShield : AIState {
 		}
 	}
 	public override void OnStateUpdate(CommonNPCInfo info) {
-		if (ChangeStateIfTargetNull(StateType<Boss_Despawn>()))
+		if (ChangeStateIfTargetNull(StateType<Boss_Despawn_State>()))
 			return;
 
 

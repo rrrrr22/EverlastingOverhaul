@@ -1,5 +1,5 @@
 ﻿using EverlastingOverhaul.Common.NPCsOverhaul.Bosses.EyeofCuthulu;
-using EverlastingOverhaul.Common.Systems;
+using EverlastingOverhaul.Common.Systems.NPCReworker;
 using EverlastingOverhaul.Common.Utils;
 using Microsoft.Build.Evaluation;
 using Microsoft.Xna.Framework;
@@ -66,7 +66,7 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.EaterofWorld
             AIState.StateType<EoW_Dash>(),
             AIState.StateType<EoW_Spit>(),
             AIState.StateType<EoW_EarthShatter>(),
-            AIState.StateType<Boss_Despawn>()
+            AIState.StateType<Boss_Despawn_State>()
         ];
 
 
@@ -91,7 +91,7 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.EaterofWorld
         }
         public override int[] RegisterStates() => [
             AIState.StateType<EoW_Segment>(),
-            AIState.StateType<Boss_Despawn>()
+            AIState.StateType<Boss_Despawn_State>()
         ];
 
     }
@@ -116,7 +116,7 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.EaterofWorld
         }
         public override int[] RegisterStates() => [
             AIState.StateType<EoW_Segment>(),
-            AIState.StateType<Boss_Despawn>()
+            AIState.StateType<Boss_Despawn_State>()
 
         ];
 

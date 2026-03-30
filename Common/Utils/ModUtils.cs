@@ -21,12 +21,27 @@ namespace EverlastingOverhaul.Common.Utils
 {
     public static partial class ModUtils
     {
+        public static void Insert<T>(this T[] array, T value) 
+        {
+            Array.Resize(ref array, array.Length + 1);
+            array.Push(value);
+        }
         public static void Push<T>(this T[] array, T value)
         {
             Array.Copy(array, 0, array, 1, array.Length - 1);
             array[0] = value;
         }
-
+        /// <summary>
+        /// removes the first element and resizes the array
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="array"></param>
+        public static T Pop<T>(this T[] array)
+        {
+            T value = array[0];
+            Array.Copy(array, 0, array, 1, array.Length - 2);
+            return value;
+        }
         public static bool Check_PositionValid(int X, int Y)
         {
             if (!WorldGen.InWorld(X, Y))
