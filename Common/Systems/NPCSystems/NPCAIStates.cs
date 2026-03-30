@@ -83,10 +83,11 @@ namespace EverlastingOverhaul.Common.Systems.NPCReworker
                 info.inGround = inGround;
                 info.justHitTheGround = justHitTheGround;
                 currentState.OnStateUpdate(info);
-                currentState.UpdateCurrentSpriteFrame();
-                currentSprite = currentState.UpdateCurrentSprite();
+
             }
             currentState.OnPostStateUpdate();
+            currentState.UpdateCurrentSpriteFrame();
+            currentSprite = currentState.UpdateCurrentSprite();
         }
         public void OnStateChange(AIState oldState)
         {

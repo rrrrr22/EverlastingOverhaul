@@ -27,13 +27,14 @@ namespace EverlastingOverhaul.Common.Systems
             base.PostUpdateDusts();
             for (int i = 0; i < MAX_PARTICLES; i++)
             {
-                if (particles[i] == null || particles[i].isDone)
-                    continue;
 
+                if (particles[i] == null || particles[i].isDone)
+                {
+                    particles[i] = null;
+                    continue;
+                }
                 particles[i].Update();
 
-                if (particles[i].isDone)
-                    particles[i] = null;
             }
         }
 
@@ -46,7 +47,7 @@ namespace EverlastingOverhaul.Common.Systems
         private void On_Main_DoDraw_DrawNPCsOverTiles(On_Main.orig_DoDraw_DrawNPCsOverTiles orig, Main self)
         {
             orig(self);
-            Main.spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Additive, Main.DefaultSamplerState, DepthStencilState.None, Main.Rasterizer, null, Main.Transform);
+            Main.spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, Main.DefaultSamplerState, DepthStencilState.None, Main.Rasterizer, null, Main.Transform);
             for (int i = 0; i < MAX_PARTICLES; i++)
             {
                 if (particles[i] == null || particles[i].isDone)
@@ -74,18 +75,19 @@ namespace EverlastingOverhaul.Common.Systems
         public virtual string Texture => "";
         public Asset<Texture2D> loadedTexture = null;
         public float timeleftPercent { get => MathHelper.Clamp(timeleft / particlesAttributes.lifetime, 0f, 1f); }
-        public Particle parent;
+        public int parentParticle;
         public Particle[] children;
         public ModdedShaderHandler shader;
         public ModdedShaderHandler stripShader;
         public bool dontDrawSelf;
         public Vector2 spawnPosition;
-        public BetterModProjectile parentProjectile;
+        public int parentProjectile;
         public float maxTimeleft;
         internal static VertexRectangle vertexRect = new();
         public Vector2 vertexRectSize;
         public Vector2[] oldPositions = new Vector2[30];
         public float[] oldRotation = new float[30];
+        public int whoAmI = -1;
         internal static VertexStrip vertexStrip = new();
         public virtual void OnSpawn()
         {
@@ -102,8 +104,9 @@ namespace EverlastingOverhaul.Common.Systems
             particle.size = p.startSize;
             particle.timeleft = p.lifetime;
             particle.color = p.startColor;
-            particle.parent = p.parent;
+            particle.parentParticle = p.parentParticle;
             particle.vertexRectSize = p.vertexRectSize;
+            //particle.parentProjectile = parentProjectile == null ? -1 : parentProjectile.Projectile.whoAmI;
             if (p.shaderID != string.Empty)
             {
                 EffectsLoader.shaderHandlers.TryGetValue(p.shaderID, out ModdedShaderHandler shader);
@@ -117,17 +120,17 @@ namespace EverlastingOverhaul.Common.Systems
             particle.dontDrawSelf = p.dontDrawSelf;
             particle.particlesAttributes = p;
 
-            if (p.parent != null)
+            if (p.parentParticle != -1)
             {
                 // set position as an offset to the parent's position
-                particle.position = p.parent.position + position;
+                particle.position = ModContent.GetInstance<ParticleSystem>().particles[p.parentParticle].position + position;
 
             }
             particle.spawnPosition = position;
             if (parentProjectile != null)
             {
-                particle.parentProjectile = parentProjectile;
-                particle.maxTimeleft = parentProjectile.maxTimeLeft;
+                particle.parentProjectile = parentProjectile.Projectile.whoAmI;
+                particle.maxTimeleft = parentProjectile.Projectile.timeLeft;
                 particle.timeleft = parentProjectile.Projectile.timeLeft;
             }
             particle.oldPositions = new Vector2[30];
@@ -143,6 +146,7 @@ namespace EverlastingOverhaul.Common.Systems
                 if (ModContent.GetInstance<ParticleSystem>().particles[i] == null || ModContent.GetInstance<ParticleSystem>().particles[i].isDone)
                 {
                     ModContent.GetInstance<ParticleSystem>().particles[i] = particle;
+                    particle.whoAmI = i;
                     particle.OnSpawn();
                     break;
                 }
@@ -164,12 +168,12 @@ namespace EverlastingOverhaul.Common.Systems
         }
         public virtual void ParticleLifetimeUpdate()
         {
-            if (parentProjectile != null)
-                timeleft = parentProjectile.Projectile.timeLeft;
+            if (Main.projectile[parentProjectile].active)
+                timeleft = Main.projectile[parentProjectile].timeLeft;
             else
                 timeleft--;
 
-            if (timeleft <= 0 || (parentProjectile != null && !parentProjectile.Projectile.active))
+            if (timeleft <= 0 || !Main.projectile[parentProjectile].active)
             {
                 isDone = true;
             }
@@ -185,10 +189,10 @@ namespace EverlastingOverhaul.Common.Systems
             oldPositions.Push(position);
             oldRotation.Push(rotation);
             velocity *= particlesAttributes.velocitySlowdown;
-            if (parent != null)
+            if (parentParticle != -1)
             {
                 // set position as an offset to the parent's position
-                position = parent.position + position + velocity;
+                position = ModContent.GetInstance<ParticleSystem>().particles[parentParticle].position + position + velocity;
             }
             else
                 position += velocity;
@@ -245,7 +249,7 @@ namespace EverlastingOverhaul.Common.Systems
         public float startOpacity = 1f;
         public float endOpacity = 0f;
         public float velocitySlowdown = 0.975f;
-        public Particle parent = null;
+        public int parentParticle = -1;
         public string shaderID = "";
         public bool dontDrawSelf = false;
         public Vector2 vertexRectSize = Vector2.One * 16;

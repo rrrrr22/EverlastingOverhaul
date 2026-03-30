@@ -78,17 +78,21 @@ public class NPCReworkerFSM : GlobalNPC, IZDepth {
 	public override bool PreAI(NPC npc) {
         UpdateAnimation(npc);
         PreStateUpdate();
-		if(states != null)
-			states.Update();
+        if (states != null)
+            states.Update();
         PostStateUpdate();
         return false;
+    }
+    public override void PostAI(NPC npc)
+    {
+
     }
 
 	public override bool PreDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor) {
 		if(states != null)
         {
             var sprite = states.currentSprite;
-            sprite.position -= screenPos;
+            sprite.position = npc.Center - screenPos;
             sprite.color = drawColor;
             if (states.currentState.StatePreDraw(ref sprite, spriteBatch, screenPos, drawColor)) 
             {

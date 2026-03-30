@@ -32,7 +32,7 @@ namespace EverlastingOverhaul.Common.Systems.NPCReworker
         public int customFrameIndex = -1;
         public DrawData UpdateCurrentSprite()
         {
-            return new DrawData((npcTexture == null ? TextureAssets.Npc[npcID].Value : npcTexture.Value), npc.Center, frameRect, Color.White, npc.rotation, new Vector2(frameWidth / 2f, frameHeight / 2f), npc.scale, npc.direction == 1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally | SpriteEffects.FlipHorizontally);
+            return new DrawData((npcTexture == null ? TextureAssets.Npc[npcID].Value : npcTexture.Value), Vector2.Zero, frameRect, Color.White, npc.rotation, new Vector2(frameWidth / 2f, frameHeight / 2f), npc.scale, npc.spriteDirection == -1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally);
         }
 
         public void UpdateSpriteFields(int startingFrame = 0, int maxFrames = -1, int animationSpeed = 28, int frameHeight = -1) 
