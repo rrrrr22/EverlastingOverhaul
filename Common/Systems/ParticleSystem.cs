@@ -22,15 +22,13 @@ namespace EverlastingOverhaul.Common.Systems
     {
         public const int MAX_PARTICLES = Main.maxDust;
         public Particle[] particles = new Particle[MAX_PARTICLES];
-        public override void PostUpdateDusts()
+        public override void PreUpdateProjectiles()
         {
-            base.PostUpdateDusts();
-            for (int i = 0; i < MAX_PARTICLES; i++)
+            for(int i = 0; i < MAX_PARTICLES; i++)
             {
 
                 if (particles[i] == null || particles[i].isDone)
                 {
-                    particles[i] = null;
                     continue;
                 }
                 particles[i].Update();
@@ -72,21 +70,18 @@ namespace EverlastingOverhaul.Common.Systems
         public Color color;
         public float opacity;
         public ParticlesAttributes particlesAttributes;
+        public DataCache<Vector2> oldPositionsCache;
+        public DataCache<float> oldRotationsCache;
         public virtual string Texture => "";
         public Asset<Texture2D> loadedTexture = null;
         public float timeleftPercent { get => MathHelper.Clamp(timeleft / particlesAttributes.lifetime, 0f, 1f); }
-        public int parentParticle;
-        public Particle[] children;
         public ModdedShaderHandler shader;
         public ModdedShaderHandler stripShader;
         public bool dontDrawSelf;
         public Vector2 spawnPosition;
-        public int parentProjectile;
         public float maxTimeleft;
         internal static VertexRectangle vertexRect = new();
         public Vector2 vertexRectSize;
-        public Vector2[] oldPositions = new Vector2[30];
-        public float[] oldRotation = new float[30];
         public int whoAmI = -1;
         internal static VertexStrip vertexStrip = new();
         public virtual void OnSpawn()
@@ -95,7 +90,7 @@ namespace EverlastingOverhaul.Common.Systems
         }
         public static int ParticleType<T>() where T : Particle => ModContent.GetInstance<T>().type;
 
-        public static Particle NewParticle(int type, Vector2 position, ParticlesAttributes p, BetterModProjectile parentProjectile = null)
+        public static Particle NewParticle(int type, Vector2 position, ParticlesAttributes p)
         {
             Particle particle = (Particle)particleInstances[type].MemberwiseClone();
             particle.position = position;
@@ -104,7 +99,6 @@ namespace EverlastingOverhaul.Common.Systems
             particle.size = p.startSize;
             particle.timeleft = p.lifetime;
             particle.color = p.startColor;
-            particle.parentParticle = p.parentParticle;
             particle.vertexRectSize = p.vertexRectSize;
             //particle.parentProjectile = parentProjectile == null ? -1 : parentProjectile.Projectile.whoAmI;
             if (p.shaderID != string.Empty)
@@ -119,27 +113,16 @@ namespace EverlastingOverhaul.Common.Systems
             }
             particle.dontDrawSelf = p.dontDrawSelf;
             particle.particlesAttributes = p;
-
-            if (p.parentParticle != -1)
-            {
-                // set position as an offset to the parent's position
-                particle.position = ModContent.GetInstance<ParticleSystem>().particles[p.parentParticle].position + position;
-
-            }
             particle.spawnPosition = position;
-            if (parentProjectile != null)
-            {
-                particle.parentProjectile = parentProjectile.Projectile.whoAmI;
-                particle.maxTimeleft = parentProjectile.Projectile.timeLeft;
-                particle.timeleft = parentProjectile.Projectile.timeLeft;
-            }
-            particle.oldPositions = new Vector2[30];
-            particle.oldRotation = new float[30];
-            for (int i = 0; i < particle.oldPositions.Length; i++)
-            {
-                particle.oldPositions[i] = position;
-                particle.oldRotation[i] = p.rotation;
-            }
+            //particle.oldPositions = new Vector2[30];
+            //particle.oldRotation = new float[30];
+            //for (int i = 0; i < particle.oldPositions.Length; i++)
+            //{
+            //    particle.oldPositions[i] = position;
+            //    particle.oldRotation[i] = p.rotation;
+            //}
+            particle.oldPositionsCache = new DataCache<Vector2>(30,particle.position);
+            particle.oldRotationsCache = new DataCache<float>(30,particle.rotation);
             // simply dont dont add it if max particles is reached cuz idk lol dont spam particles 
             for (int i = 0; i < ParticleSystem.MAX_PARTICLES; i++)
             {
@@ -154,7 +137,7 @@ namespace EverlastingOverhaul.Common.Systems
             return particle;
         }
 
-        public virtual bool PreUpdate() => true;
+        public virtual bool PreUpdate() => !isDone;
         public virtual void PostUpdate() { }
 
         public void Update()
@@ -168,12 +151,9 @@ namespace EverlastingOverhaul.Common.Systems
         }
         public virtual void ParticleLifetimeUpdate()
         {
-            if (Main.projectile[parentProjectile].active)
-                timeleft = Main.projectile[parentProjectile].timeLeft;
-            else
-                timeleft--;
+            timeleft--;
 
-            if (timeleft <= 0 || !Main.projectile[parentProjectile].active)
+            if (timeleft <= 0)
             {
                 isDone = true;
             }
@@ -186,16 +166,10 @@ namespace EverlastingOverhaul.Common.Systems
         }
         public virtual void GeneralMovementUpdate()
         {
-            oldPositions.Push(position);
-            oldRotation.Push(rotation);
+            oldPositionsCache.InsertCache(position);
+            oldRotationsCache.InsertCache(rotation);
             velocity *= particlesAttributes.velocitySlowdown;
-            if (parentParticle != -1)
-            {
-                // set position as an offset to the parent's position
-                position = ModContent.GetInstance<ParticleSystem>().particles[parentParticle].position + position + velocity;
-            }
-            else
-                position += velocity;
+            position += velocity;
         }
         public void Draw(SpriteBatch spriteBatch)
         {
@@ -205,7 +179,7 @@ namespace EverlastingOverhaul.Common.Systems
             {
                 stripShader.setProperties(color, loadedTexture?.Value, shaderData: new Vector4(opacity, timeleftPercent, 0, 0));
                 stripShader.apply();
-                vertexStrip.PrepareStripWithProceduralPadding(oldPositions, oldRotation, (_) => color, (p) => MathHelper.Lerp(particlesAttributes.stripWidth * size, particlesAttributes.stripEndWidth * size, p), -Main.screenPosition, true);
+                vertexStrip.PrepareStripWithProceduralPadding(oldPositionsCache.cache, oldRotationsCache.cache, (_) => color, (p) => MathHelper.Lerp(particlesAttributes.stripWidth * size, particlesAttributes.stripEndWidth * size, p), -Main.screenPosition, true);
                 vertexStrip.DrawTrail();
             }
             if (shader != null)
@@ -227,8 +201,8 @@ namespace EverlastingOverhaul.Common.Systems
         {
             type = particleInstances.Count;
             particleInstances.Add(this);
-            if(Texture != string.Empty)
-            loadedTexture = ModContent.Request<Texture2D>(Texture);
+            if (Texture != string.Empty)
+                loadedTexture = ModContent.Request<Texture2D>(Texture);
         }
 
         public void Unload()
@@ -249,7 +223,6 @@ namespace EverlastingOverhaul.Common.Systems
         public float startOpacity = 1f;
         public float endOpacity = 0f;
         public float velocitySlowdown = 0.975f;
-        public int parentParticle = -1;
         public string shaderID = "";
         public bool dontDrawSelf = false;
         public Vector2 vertexRectSize = Vector2.One * 16;

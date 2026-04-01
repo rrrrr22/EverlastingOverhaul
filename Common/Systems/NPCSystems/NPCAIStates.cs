@@ -46,7 +46,7 @@ namespace EverlastingOverhaul.Common.Systems.NPCReworker
             }
             currentState = this.states[states[0]];
             currentState.OnEntered(-1);
-            currentState.stateCounter.Start();
+            currentState.stateCounter = 0;
             
             currentState.UpdateCurrentSpriteFrame();
         }
@@ -88,13 +88,14 @@ namespace EverlastingOverhaul.Common.Systems.NPCReworker
             currentState.OnPostStateUpdate();
             currentState.UpdateCurrentSpriteFrame();
             currentSprite = currentState.UpdateCurrentSprite();
+            currentState.counter++;
         }
         public void OnStateChange(AIState oldState)
         {
             oldState.OnExited(npc.aiAction);
             AIState newState = states[npc.aiAction];
             currentState = newState;
-            currentState.stateCounter.Start();
+            currentState.stateCounter = 0;
             currentState.OnEntered(oldState.type);
 
         }

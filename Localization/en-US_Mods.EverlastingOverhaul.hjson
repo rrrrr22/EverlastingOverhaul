@@ -374,6 +374,7 @@ Projectiles: {
 	DukeVortex.DisplayName: Duke Vortex
 	DukeShadows.DisplayName: Duke Shadows
 	Dukenado.DisplayName: Dukenado
+	DukeBulletVortex.DisplayName: Duke Bullet Vortex
 }
 
 NPCs: {

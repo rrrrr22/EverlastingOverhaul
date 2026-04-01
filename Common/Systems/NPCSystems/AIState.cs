@@ -90,8 +90,8 @@ namespace EverlastingOverhaul.Common.Systems.NPCReworker
         public int type { get; private set; }
         public int counter
         {
-            get { return stateCounter.currentFramesPassedOrRemained; }
-            set { stateCounter.currentFramesPassedOrRemained = value; }
+            get { return stateCounter; }
+            set { stateCounter = value; }
         }
         public float zDepth
         {
@@ -106,7 +106,7 @@ namespace EverlastingOverhaul.Common.Systems.NPCReworker
         {
             AIState state = (AIState)AIStates[type].MemberwiseClone();
             state.npcID = npc.type;
-            state.stateCounter = new(-1, false);
+            state.stateCounter = 0;
             state.npcWhoAmI = npc.whoAmI;
             state.SetDefaults();
             return state;
@@ -132,7 +132,7 @@ namespace EverlastingOverhaul.Common.Systems.NPCReworker
             where T : AIState => ModContent.GetInstance<T>().type;
 
         public static readonly List<AIState> AIStates = new List<AIState>();
-        public FrameCounter stateCounter;
+        public int stateCounter;
 
         public Action<AIState> changeState;
 

@@ -21,7 +21,6 @@ using EverlastingOverhaul.Contents.Items.NoneSynergy.TrueEnchantedSword;
 using EverlastingOverhaul.Contents.Items.Weapon.ArcaneRange.MoonStarBow;
 using EverlastingOverhaul.Contents.Items.Weapon.ArcaneRange.TheBurningSky;
 using EverlastingOverhaul.Contents.Items.Weapon.MagicSynergyWeapon.AmberBoneSpear;
-using EverlastingOverhaul.Contents.Items.Weapon.MagicSynergyWeapon.LaserSniper;
 using EverlastingOverhaul.Contents.Items.Weapon.MagicSynergyWeapon.MagicBow;
 using EverlastingOverhaul.Contents.Items.Weapon.MagicSynergyWeapon.MagicHandCannon;
 using EverlastingOverhaul.Contents.Items.Weapon.MagicSynergyWeapon.SinisterBook;
@@ -555,7 +554,7 @@ internal class OutroEffectSystem : ModSystem {
 		Arr_WeaponTag[tag].Add(ModContent.ItemType<TheUnderdog>());
 		Arr_WeaponTag[tag].Add(ModContent.ItemType<Unforgiving>());
 		Arr_WeaponTag[tag].Add(ModContent.ItemType<PaintRifle>());
-		Arr_WeaponTag[tag].Add(ModContent.ItemType<LaserSniper>());
+		//Arr_WeaponTag[tag].Add(ModContent.ItemType<LaserSniper>());
 
 		Arr_WeaponTag[tag].Add(ModContent.ItemType<BlueMinishark>());
 		Arr_WeaponTag[tag].Add(ModContent.ItemType<FrozenShark>());
@@ -655,7 +654,7 @@ internal class OutroEffectSystem : ModSystem {
 		Arr_WeaponTag[tag].Add(ModContent.ItemType<TheUnderdog>());
 		Arr_WeaponTag[tag].Add(ModContent.ItemType<Unforgiving>());
 		Arr_WeaponTag[tag].Add(ModContent.ItemType<PaintRifle>());
-		Arr_WeaponTag[tag].Add(ModContent.ItemType<LaserSniper>());
+		//Arr_WeaponTag[tag].Add(ModContent.ItemType<LaserSniper>());
 
 		Arr_WeaponTag[tag].Add(ModContent.ItemType<BlueMinishark>());
 		Arr_WeaponTag[tag].Add(ModContent.ItemType<FrozenShark>());
@@ -814,7 +813,7 @@ internal class OutroEffectSystem : ModSystem {
 		Arr_WeaponTag[tag].Add(ItemID.ChargedBlasterCannon);
 		Arr_WeaponTag[tag].Add(ItemID.BubbleGun);
 
-		Arr_WeaponTag[tag].Add(ModContent.ItemType<LaserSniper>());
+		//Arr_WeaponTag[tag].Add(ModContent.ItemType<LaserSniper>());
 		Arr_WeaponTag[tag].Add(ModContent.ItemType<MagicHandCannon>());
 		Arr_WeaponTag[tag].Add(ModContent.ItemType<StarLightDistributer>());
 		Arr_WeaponTag[tag].Add(ModContent.ItemType<ZapSnapper>());

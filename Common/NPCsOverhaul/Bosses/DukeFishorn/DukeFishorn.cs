@@ -13,9 +13,11 @@ using System.Collections.Generic;
 using System.Linq;
 using Terraria;
 using Terraria.Audio;
+using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.Graphics;
 using Terraria.Graphics.CameraModifiers;
+using Terraria.Graphics.Shaders;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -82,17 +84,7 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
         }
 
     }
-    public class DukeWaterStream : Particle
-    {
-
-        public override void PostUpdate()
-        {
-
-        }
-
-
-    }
-    public class DukeVortex : BetterModProjectile
+    public class DukeBulletVortex : BetterModProjectile
     {
         public override int TrailLength => 1;
         public override void BetterSetDefaults()
@@ -101,6 +93,16 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
             Projectile.timeLeft = 240;
             Projectile.hostile = true;
             Projectile.friendly = false;
+        }
+        private VertexRectangle rect = new();
+        public override bool PreDraw(ref Color lightColor)
+        {
+            ModdedShaderHandler shader = EffectsLoader.shaderHandlers["DukeBullet"];
+            shader.setProperties(Color.Turquoise, TextureAssets.Extra[193].Value);
+            shader.apply();
+            rect.Draw(Projectile.Center - Main.screenPosition, Color.White, new Vector2(256,128),Projectile.rotation + MathHelper.Pi, Projectile.Center - Main.screenPosition);
+            
+            return false;
         }
         Vector2 velLength;
         public override void AI()
@@ -118,10 +120,6 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
             }
         }
 
-        public override Particle ProjectileParticle()
-        {
-            return Particle.NewParticle(Particle.ParticleType<BasicParticle>(), Vector2.Zero, ParticleTemplates._default with { dontDrawSelf = true, shaderID = "DukeBullet", vertexRectSize = new Vector2(256, 129), rotation = Projectile.velocity.ToRotation(), endOpacity = 1, endSize = 1f, startColor = Color.Turquoise, endColor = Color.Turquoise}, this);
-        }
     }
     public class DukeBiome : ModBiome
     {
@@ -388,7 +386,7 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
 
                 fireCounter++;
                 recoilCounter = 0;
-                NPCReworkerFSM.NewProjectileWithMPCheck(npc.GetSource_FromAI(), npc.Center, npc.DirectionTo(Target.Center).RotatedBy(0) * 25, ModContent.ProjectileType<DukeVortex>(), 50, 1);
+                NPCReworkerFSM.NewProjectileWithMPCheck(npc.GetSource_FromAI(), npc.Center, npc.DirectionTo(Target.Center).RotatedBy(0) * 25, ModContent.ProjectileType<DukeBulletVortex>(), 50, 1);
                 fireDelay = Main.rand.Next(60, 100);
                 rotDir = Main.rand.NextBool() == true ? -1 : 1;
             }

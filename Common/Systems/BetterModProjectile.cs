@@ -12,7 +12,6 @@ namespace EverlastingOverhaul.Common.Systems
         public override string Texture => "Terraria/Images/Projectile_" + ProjectileID.None;
         public Vector2 spawnPosition = Vector2.Zero;
         public int maxTimeLeft = -1;
-        public Particle projParticle = null;
         public float ProjectileLifeProgress { get => (float)Projectile.timeLeft / maxTimeLeft; }
         public virtual int TrailLength => 30;
         public override void SetDefaults()
@@ -35,15 +34,10 @@ namespace EverlastingOverhaul.Common.Systems
         {
         
         }
-        public virtual Particle ProjectileParticle() 
-        {
-            return null;
-        }
         public override sealed void OnSpawn(IEntitySource source)
         {
             spawnPosition = Projectile.Center;
             maxTimeLeft = (maxTimeLeft == -1 ? Projectile.timeLeft : maxTimeLeft);
-            projParticle = ProjectileParticle();
             OnSpawn(source, spawnPosition);
         }
 
