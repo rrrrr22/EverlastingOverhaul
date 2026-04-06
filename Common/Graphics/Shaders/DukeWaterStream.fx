@@ -27,31 +27,38 @@ float sinBetween(float a, float b, float v)
     return a + h + sin
     (v) * h;
 }
+float2 turbulence(float2 p)
+{
+    float freq = 7.;
+    
+    float2x2 rot = float2x2(0.6, -0.4, 0.4, 0.6);
+    
+    for (float i = 0.0; i < 15; i++)
+    {
+        float phase = freq * mul(p, rot).y + 2 * time + i;
+        p += -1 * rot[0] * cos(phase) / freq;
+        
+        rot *= float2x2(0.6, -0.8, 0.8, 0.6);
+        freq *= 1.75;
+    }
+    
+    return p;
+}
 float4 ShaderPS(float4 vertexColor : COLOR0, float2 texCoords : TEXCOORD0) : COLOR0
 {
     float2 centeredUV = texCoords;
     
-    // make it near the hitbox
-    centeredUV.x += 0.25;
-    
     centeredUV *= 2;
-    centeredUV -= 0.5;
+    centeredUV -= 1;
     
-    float2 distanceUV = 1 / distance(centeredUV,
-    float2(0.5, 0.5));
-    float tex = tex2D(image1, centeredUV - float2(time, 0)).r;
+    float2 distanceUV = 1 / distance(float2(0.5, 0.5) / 30, (centeredUV)) / 30;
       
+    distanceUV = smoothstep(0, 1, distanceUV);
     float pulse = sin(time * 45) * 0.3 + 1;
     
-    float2 bolt = (distanceUV);
-    bolt *= smoothstep(0.1, 1, length(bolt / 10));
-    bolt *= pulse;
-    float4 finalCol = tex * bolt.y * (float4(lerp(color.rgb, float3(1, 1, 3), centeredUV.x), 5));
-    
-    //remove the cut
+    float2 bolt = (distanceUV * pulse);
 
-    finalCol.a /= texCoords.y * 150;
-    return floor(finalCol * 5) / 5;
+    return bolt.x * float4(lerp(float3(0,0,1),color, bolt.x), bolt.x);
 
 }
 

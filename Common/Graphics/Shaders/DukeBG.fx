@@ -27,13 +27,57 @@ float sinBetween(float a, float b, float v)
     return a + h + sin
     (v) * h;
 }
+
+float2 turbulence(float2 p)
+{
+    float freq = 7.;
+    
+    float2x2 rot = float2x2(0.6, -0.8, 0.8, 0.6);
+    
+    for (float i = 0.0; i < 15; i++)
+    {
+        float phase = freq * mul(p,rot).y + 0.4 * time + i;
+        p += -1 * rot[0] * cos(phase) / freq;
+        
+        rot *= float2x2(0.6, -0.8, 0.8, 0.6);
+        freq *= 1.75;
+    }
+    
+    return p;
+}
+
+float3 OneBasedRGB(float3 rgb)
+{
+    return rgb / 255;
+}
+
 float4 ShaderPS(float4 vertexColor : COLOR0, float2 texCoords : TEXCOORD0) : COLOR0
 {
-    float2 uv = texCoords * float2(1,1 / exp(texCoords.y) * 0.5);
-    uv.x = sin(texCoords.x * 2 - 1);
-    float4 tex1 = tex2D(image1, uv + shaderData.xy / 5120 + time * 0.05) * float4(0.5, 0.25, 1, 1);
-    float4 texClouds = tex2D(image1, uv * float2(1, 3) + shaderData.xy / 3840 + time * 0.01) * float4(uv.y, uv.y, uv.y, 1) * float4(0, 0.2, 2, 1);
-    return tex1 * tex2D(image1, uv + shaderData.xy / 1920 + time * 0.03) * float4(1, 0.25, 1, 1) + texClouds;
+    //float2 uv = texCoords * float2(1,1 / exp(texCoords.y) * 0.5);
+    //uv.x = sin(texCoords.x * 2 - 1);
+    //float4 tex1 = tex2D(image1, uv + shaderData.xy / 5120 + time * 0.05) * float4(0.5, 0.25, 1, 1);
+    //float4 texClouds = tex2D(image1, uv * float2(1, 3) + shaderData.xy / 3840 + time * 0.01) * float4(uv.y, uv.y, uv.y, 1) * float4(0, 0.2, 2, 1);
+    //return tex1 * tex2D(image1, uv + shaderData.xy / 1920 + time * 0.03) * float4(1, 0.25, 1, 1) + texClouds;
+
+
+    float2 uv = (texCoords) * 2 - 1;
+    uv *= 10;
+    float3 ro = float3(0, 0, -1);
+    float3 rd = normalize(float3(uv.x, uv.y, 1));
+    float t = 0;
+    float4 col = float4(0, 0, 0, 0);
+    float z = 0;
+    float d = 1;
+    float3 p = 0;
+
+    
+    col.rgb = 0.5 * exp2(0.1 * uv.x * float3(-1, 0, 2));;
+       //Vary brightness
+    col /= dot(cos(uv * 3.), sin(-uv.yx * 3. * .618)) + 3.0;
+    //Exponential tonemap
+    col = 1.0 - exp(-col);
+    return float4(col.rgb, 1);
+
 
 }
 

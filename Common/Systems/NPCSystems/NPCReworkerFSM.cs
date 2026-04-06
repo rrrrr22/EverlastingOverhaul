@@ -94,7 +94,7 @@ public class NPCReworkerFSM : GlobalNPC, IZDepth {
             var sprite = states.currentSprite;
             sprite.position = npc.Center - screenPos;
             sprite.color = drawColor;
-            if (states.currentState.StatePreDraw(ref sprite, spriteBatch, screenPos, drawColor)) 
+            if (states != null && states.currentState.StatePreDraw(ref sprite, spriteBatch, screenPos, drawColor)) 
             {
                 sprite.Draw(spriteBatch);
             }

@@ -27,10 +27,9 @@ public enum TweenState : byte
     Paused, Running, Stopped, Finished
 }
 
-public record struct TweenCache<T>(T Start, T End, bool Pingpong, TweenEaseType EaseType, int Duration) where T : struct;
 
 /// <summary>
-/// A Tweener almost similar to godot's, when passing a property as reference, this property will get tweened only when its updated manually with <see cref="Update"/>, this is to give freedom on how it gets updated and have full control of the timings
+/// A tweener almost exactly the same as godot's, call <see cref="TweenProperty(TweenCache{T}[])"/> inside anything like setdefualts hooks and assign its value to anything you want in an update hook
 /// </summary>
 /// <typeparam name="T"></typeparam>
 public class Tween<T> : ITween where T : struct

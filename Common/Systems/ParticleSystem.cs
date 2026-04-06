@@ -54,6 +54,8 @@ namespace EverlastingOverhaul.Common.Systems
                 particles[i].Draw(Main.spriteBatch);
             }
             Main.spriteBatch.End();
+            Main.pixelShader.CurrentTechnique.Passes[0].Apply();
+
         }
     }
 
@@ -144,9 +146,9 @@ namespace EverlastingOverhaul.Common.Systems
         {
             if (!PreUpdate())
                 return;
-            ParticleLifetimeUpdate();
             GeneralMovementUpdate();
             GeneralLerpValuesUpdate();
+            ParticleLifetimeUpdate();
             PostUpdate();
         }
         public virtual void ParticleLifetimeUpdate()
@@ -162,14 +164,14 @@ namespace EverlastingOverhaul.Common.Systems
         {
             color = Color.Lerp(particlesAttributes.endColor, particlesAttributes.startColor, timeleftPercent);
             opacity = MathHelper.Clamp(MathHelper.Lerp(particlesAttributes.endOpacity, particlesAttributes.startOpacity, timeleftPercent), 0f, 1f);
-            size = MathHelper.Clamp(MathHelper.Lerp(particlesAttributes.endSize, particlesAttributes.startSize, timeleftPercent), 0f, 1f);
+            size = MathHelper.Lerp(particlesAttributes.endSize, particlesAttributes.startSize, timeleftPercent);
         }
         public virtual void GeneralMovementUpdate()
         {
             oldPositionsCache.InsertCache(position);
             oldRotationsCache.InsertCache(rotation);
-            velocity *= particlesAttributes.velocitySlowdown;
             position += velocity;
+            velocity *= particlesAttributes.velocitySlowdown;
         }
         public void Draw(SpriteBatch spriteBatch)
         {

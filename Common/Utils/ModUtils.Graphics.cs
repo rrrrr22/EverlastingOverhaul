@@ -71,8 +71,10 @@ namespace EverlastingOverhaul.Common.Utils
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <param name="array"></param>
-        public static T Pop<T>(this T[] array)
+        public static T? Pop<T>(this T[] array) where T : struct
         {
+            if (array.Length == 0)
+                return null;
             T value = array[0];
             Array.Copy(array, 0, array, 1, array.Length - 2);
             return value;
