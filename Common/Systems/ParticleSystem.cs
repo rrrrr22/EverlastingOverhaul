@@ -70,6 +70,7 @@ namespace EverlastingOverhaul.Common.Systems
         public bool isDone = false;
         public float timeleft;
         public Color color;
+        public Color endColor;
         public float opacity;
         public ParticlesAttributes particlesAttributes;
         public DataCache<Vector2> oldPositionsCache;
@@ -101,6 +102,7 @@ namespace EverlastingOverhaul.Common.Systems
             particle.size = p.startSize;
             particle.timeleft = p.lifetime;
             particle.color = p.startColor;
+            particle.endColor = p.endColor;
             particle.vertexRectSize = p.vertexRectSize;
             //particle.parentProjectile = parentProjectile == null ? -1 : parentProjectile.Projectile.whoAmI;
             if (p.shaderID != string.Empty)
@@ -179,14 +181,14 @@ namespace EverlastingOverhaul.Common.Systems
 
             if (stripShader != null)
             {
-                stripShader.setProperties(color, loadedTexture?.Value, shaderData: new Vector4(opacity, timeleftPercent, 0, 0));
+                stripShader.setProperties(color, loadedTexture?.Value, shaderData: new Vector4(timeleftPercent, endColor.R, endColor.G, endColor.B));
                 stripShader.apply();
                 vertexStrip.PrepareStripWithProceduralPadding(oldPositionsCache.cache, oldRotationsCache.cache, (_) => color, (p) => MathHelper.Lerp(particlesAttributes.stripWidth * size, particlesAttributes.stripEndWidth * size, p), -Main.screenPosition, true);
                 vertexStrip.DrawTrail();
             }
             if (shader != null)
             {
-                shader.setProperties(color, loadedTexture?.Value, shaderData: new Vector4(opacity, timeleftPercent, 0, 0));
+                shader.setProperties(color, loadedTexture?.Value, shaderData: new Vector4(timeleftPercent, endColor.R, endColor.G, endColor.B));
                 shader.apply();
                 vertexRect.Draw(position - Main.screenPosition, Color.White, vertexRectSize * size, rotation, position - Main.screenPosition);
             }

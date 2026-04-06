@@ -51,14 +51,22 @@ float4 ShaderPS(float4 vertexColor : COLOR0, float2 texCoords : TEXCOORD0) : COL
     centeredUV *= 2;
     centeredUV -= 1;
     
-    float2 distanceUV = 1 / distance(float2(0.5, 0.5) / 30, (centeredUV)) / 30;
+    float2 distanceUV = 1 / distance(float2(0.5, 0.5), (centeredUV / 30));
       
-    distanceUV = smoothstep(0, 1, distanceUV);
+    distanceUV *= smoothstep(1, 0, length(texCoords * 2 - 1) * 1);
     float pulse = sin(time * 45) * 0.3 + 1;
     
     float2 bolt = (distanceUV * pulse);
-
-    return bolt.x * float4(lerp(float3(0,0,1),color, bolt.x), bolt.x);
+    float3 highestRGBValue;
+    if (color.r > color.b)
+        highestRGBValue = float3(1, 0, 0);
+    else if (color.b > color.g)
+        highestRGBValue = float3(0,1,0);
+    else
+        highestRGBValue = float3(0,0,1);
+    
+        return bolt.x * float4(lerp(highestRGBValue, color, bolt.x),
+    bolt.x);
 
 }
 

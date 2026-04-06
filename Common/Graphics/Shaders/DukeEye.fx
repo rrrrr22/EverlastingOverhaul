@@ -28,31 +28,46 @@ float2 expandInsideOutside(float2 uv)
     return (d * uv2 + ((t) - uv2));
     
 }
-float4 ShaderPS(float4 vertexColor : COLOR0, float2 texCoords : TEXCOORD0) : COLOR0
+
+float4 Star(float2 uv)
 {
-    float4 col = float4(0,0,0,0);
-    float2 uv = texCoords * 2 - 1;
-    
     float d = length(uv);
     float angle = atan2(uv.y, uv.x);
     float2 VortexUV = float2(sin(angle + d * .1), d + time);
     
-    float glow = 1 / length(uv);
-    float pulse = sin(time * 30) * 0.05 + 1;
+    float glow = 1 / length(uv) / 2;
+    float pulse = sin(time * 30) * 0.2 + 1;
     
     
-    float starShape = clamp(1 - abs(((uv.x * 0.5) * (uv.y * 0.5f)) * 125), 0, 1);
+    float starShape = clamp(1 - abs(((uv.x * .9f) * (uv.y * .9f)) * 125), 0, 2);
 
-    glow *= smoothstep(0,1,glow / 22 * pulse);
-    starShape *= smoothstep(0, 1, length(glow / 10) * 100);
-    float4 star = smoothstep(0, 1, float4((starShape + glow) * color * 3, starShape));
+    glow *= smoothstep(0, 1, glow / 22 * pulse);
+    starShape *= smoothstep(0, 1, length(glow) * 100);
+    float4 star = smoothstep(0, 1, float4((starShape + glow / 2) * (color) * 2, starShape));
     star = tanh(star);
+    return star;
+}
+
+float4 ShaderPS(float4 vertexColor : COLOR0, float2 texCoords : TEXCOORD0) : COLOR0
+{
+    float4 col = float4(0, 0, 0, 0);
+    float2 uv = texCoords * 2 - 1;
     
-    col += star;
+
     
+    // base
+    col += Star(uv);
     
+    //glows
+    for (float i = 3.141518 * 2; i > 0; i -= 3.141518 * 2 / 16)
+    {
+        
+    }
     
-    return col;
+    //float2 uv = texCoords;
+    //float4 col = tex2D(image1,uv);
+    //col.a *= col.r;
+        return col;
 }
 
 technique t0

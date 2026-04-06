@@ -14,6 +14,10 @@ namespace EverlastingOverhaul.Common.Utils
 {
     public static partial class ModUtils
     {
+        public static float Frac(float x) 
+        {
+            return x - MathF.Floor(x);
+        }
         public static DrawData[] DrawData_Spliting(DrawData data, int numberOfImages, float rotation, Color color, float offset)
         {
 

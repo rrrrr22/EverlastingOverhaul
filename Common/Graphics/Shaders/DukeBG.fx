@@ -72,11 +72,11 @@ float4 ShaderPS(float4 vertexColor : COLOR0, float2 texCoords : TEXCOORD0) : COL
 
     
     col.rgb = 0.5 * exp2(0.1 * uv.x * float3(-1, 0, 2));;
-       //Vary brightness
+    //Vary brightness
     col /= dot(cos(uv * 3.), sin(-uv.yx * 3. * .618)) + 3.0;
     //Exponential tonemap
     col = 1.0 - exp(-col);
-    return float4(col.rgb, 1);
+    return float4(float3(0,0,0), 1);
 
 
 }

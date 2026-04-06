@@ -55,7 +55,7 @@ public class Tween<T> : ITween where T : struct
 
     public static implicit operator T(Tween<T> tween) 
     {
-        return tween.currentProgress;
+         return tween.currentProgress;
     }
 
     public Tween<T> TweenProperty(params TweenCache<T>[] cache)
@@ -92,10 +92,10 @@ public class Tween<T> : ITween where T : struct
                 currentProgressPercentage = ModUtils.OutSine(currentDuration / (float)endDuration);
                 break;
             case TweenEaseType.InExpo:
-                currentProgressPercentage = ModUtils.InExpo(currentDuration / (float)endDuration, 11f);
+                currentProgressPercentage = ModUtils.InExpo(currentDuration / (float)endDuration, 4);
                 break;
             case TweenEaseType.OutExpo:
-                currentProgressPercentage = ModUtils.OutExpo(currentDuration / (float)endDuration, 11f);
+                currentProgressPercentage = ModUtils.OutExpo(currentDuration / (float)endDuration, 4);
                 break;
         }
         if (tween.Pingpong)

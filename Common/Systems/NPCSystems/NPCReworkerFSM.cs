@@ -103,7 +103,6 @@ public class NPCReworkerFSM : GlobalNPC, IZDepth {
 	}
     public override void PostDraw(NPC npc, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
     {
-        base.PostDraw(npc, spriteBatch, screenPos, drawColor);
         if (states != null)
             states.currentState.StatePostDraw(spriteBatch,screenPos,drawColor);
     }
