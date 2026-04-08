@@ -9,6 +9,7 @@ using System.Linq;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.GameContent;
+using Terraria.Graphics;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -30,12 +31,15 @@ namespace EverlastingOverhaul.Common.Systems.NPCReworker
         public Rectangle frameRect = new();
         public Asset<Texture2D> npcTexture;
         public int customFrameIndex = -1;
+        public int spriteDirectionY = 1;
+        public int spriteDirectionX = 1;
+        public SpriteEffects spriteEffect = SpriteEffects.None;
         public DrawData UpdateCurrentSprite()
         {
-            return new DrawData((npcTexture == null ? TextureAssets.Npc[npcID].Value : npcTexture.Value), Vector2.Zero, frameRect, Color.White, npc.rotation, new Vector2(frameWidth / 2f, frameHeight / 2f), npc.scale, npc.spriteDirection == -1 ? SpriteEffects.None : SpriteEffects.FlipHorizontally);
+            return new DrawData((npcTexture == null ? TextureAssets.Npc[npcID].Value : npcTexture.Value), Vector2.Zero, frameRect, Color.White, npc.rotation, new Vector2(frameWidth / 2f, frameHeight / 2f), npc.scale, spriteEffect);
         }
 
-        public void UpdateSpriteFields(int startingFrame = 0, int maxFrames = -1, int animationSpeed = 28, int frameHeight = -1) 
+        public void UpdateSpriteFields(int startingFrame = 0, int maxFrames = -1, int animationSpeed = 28, int frameHeight = -1)
         {
             this.startingFrame = startingFrame;
             this.animationSpeed = animationSpeed;
@@ -53,6 +57,8 @@ namespace EverlastingOverhaul.Common.Systems.NPCReworker
 
             frameWidth = texture.Width;
 
+
+
         }
 
         public void UpdateCurrentSpriteFrame() 
@@ -64,6 +70,17 @@ namespace EverlastingOverhaul.Common.Systems.NPCReworker
                 currentFrame = customFrameIndex;
                 customFrameIndex = -1;
             }
+
+            // God i hate this, i had no choice, | wont work as expected, please help :(
+            if (spriteDirectionX == 1 && spriteDirectionY == 1)
+                spriteEffect = SpriteEffects.None;
+            if (spriteDirectionX == 1 && spriteDirectionY == -1)
+                spriteEffect = SpriteEffects.FlipVertically;
+            if (spriteDirectionX == -1 && spriteDirectionY == 1)
+                spriteEffect = SpriteEffects.FlipHorizontally;
+            if (spriteDirectionX == -1 && spriteDirectionY == -1)
+                spriteEffect = SpriteEffects.FlipHorizontally | SpriteEffects.FlipVertically;
+
             frameRect = new Rectangle(0, currentFrame * this.frameHeight, this.frameWidth, this.frameHeight);
             
         }
@@ -102,6 +119,15 @@ namespace EverlastingOverhaul.Common.Systems.NPCReworker
 
         public virtual void SetDefaults() { }
 
+        public bool CounterBetween(int start, int end, bool includeStart = true, bool includeEnd = false) 
+        {
+            int actualStart = start, actualEnd = end;
+            bool isStartTrue = false, isEndTrue = false;
+            isStartTrue = includeStart ? (counter >= actualStart) : (counter > actualStart);
+            isEndTrue = includeEnd ? (counter <= actualEnd) : (counter < actualEnd);
+            return isStartTrue && isEndTrue;
+        }
+
         public static AIState NewAIState(NPC npc, int type)
         {
             AIState state = (AIState)AIStates[type].MemberwiseClone();
@@ -135,7 +161,10 @@ namespace EverlastingOverhaul.Common.Systems.NPCReworker
         public int stateCounter;
 
         public Action<AIState> changeState;
-
+        /// <summary>
+        /// DONT USE, for backwards compat only, im stupid for not using a generic instead
+        /// </summary>
+        /// <param name="state"></param>
         public void ChangeState(int state)
         {
             if(preStateChangeState == -1) 
@@ -151,7 +180,21 @@ namespace EverlastingOverhaul.Common.Systems.NPCReworker
                 changeState.Invoke(this);
             }
         }
-
+        public void ChangeState<T>() where T: AIState
+        {
+            if (preStateChangeState == -1)
+            {
+                npc.aiAction = StateType<T>();
+                changeState.Invoke(this);
+            }
+            else
+            {
+                int overrideState = preStateChangeState;
+                preStateChangeState = -1;
+                npc.aiAction = overrideState;
+                changeState.Invoke(this);
+            }
+        }
         public virtual void OnEntered(int oldState) { }
         /// <summary>
         /// mainly used for polymorphism setup for AIStates

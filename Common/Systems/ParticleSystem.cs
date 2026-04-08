@@ -92,7 +92,10 @@ namespace EverlastingOverhaul.Common.Systems
 
         }
         public static int ParticleType<T>() where T : Particle => ModContent.GetInstance<T>().type;
-
+        public static Particle NewParticle<T>(Vector2 position, ParticlesAttributes p) where T : Particle 
+        {
+            return NewParticle(ModContent.GetInstance<T>().type,position,p);
+        }
         public static Particle NewParticle(int type, Vector2 position, ParticlesAttributes p)
         {
             Particle particle = (Particle)particleInstances[type].MemberwiseClone();
