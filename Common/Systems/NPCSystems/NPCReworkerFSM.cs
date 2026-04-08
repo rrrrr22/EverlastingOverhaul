@@ -65,6 +65,7 @@ public class NPCReworkerFSM : GlobalNPC, IZDepth {
 	public override void SetStaticDefaults() {
 		NPCID.Sets.TrailingMode[VanillaNPCType] = 3;
 		NPCID.Sets.TrailCacheLength[VanillaNPCType] = 30;
+        NPCID.Sets.MustAlwaysDraw[VanillaNPCType] = true;
 	}
 	public override void SetDefaults(NPC entity) {
 		entity.aiStyle = -1;
@@ -96,7 +97,7 @@ public class NPCReworkerFSM : GlobalNPC, IZDepth {
             sprite.color = drawColor;
             if (states != null && states.currentState.StatePreDraw(ref sprite, spriteBatch, screenPos, drawColor)) 
             {
-                sprite.Draw(spriteBatch);
+                 sprite.Draw(spriteBatch);
             }
         }
         return false;

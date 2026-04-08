@@ -61,8 +61,8 @@ float2 expandInsideOutside(float2 uv)
 float4 ShaderPS(float4 vertexColor : COLOR0, float2 texCoords : TEXCOORD0) : COLOR0
 {
     
-    float laserStyle = length(((texCoords.x) - 1) / 120) * length(1 / ((texCoords.y) - 0.5));
-    float4 coloredLine = color.rgbr * laserStyle;
+    float laserStyle = length((abs(texCoords.y) - 1) / 120) * length(1 / (abs(texCoords.x * 2 - 1) - 0.5));
+    float4 coloredLine = float4(color.rgb * laserStyle,laserStyle);
     return coloredLine;
     
 }
@@ -71,7 +71,6 @@ technique t0
 {
     pass ColorIndicatorEffect
     {
-        VertexShader = compile vs_2_0 ShaderVS();
-        PixelShader = compile ps_2_0 ShaderPS();
+        PixelShader = compile ps_3_0 ShaderPS();
     }
 }

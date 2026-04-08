@@ -55,40 +55,42 @@ float2 turbulence(float2 p)
     
     return p;
 }
+
+float2 strikeShape(float2 uv)
+{
+    // tail
+    float2 tail;
+    tail = uv * 2 - 1;
+    tail = abs(uv.x * uv.y);
+    
+    //ball
+    float ball = 1/abs(length(uv * 2 - 1)) / 15;
+    
+    
+    
+    return uv;
+}
+float3 palette(float t)
+{
+    float3 a = float3(-0.462,3.078,0.878);
+    float3 b = float3(1.564, 2.450, -0.112);
+    float3 c = float3(1.860
+    ,1.208 ,- 6.142);
+    float3 d = float3(6.285
+    ,6.285
+    ,6.813);
+
+    return a + b * cos(6.28318 * (c * t + d));
+}
 float4 ShaderPS(float4 vertexColor : COLOR0, float2 texCoords : TEXCOORD0) : COLOR0
 {
     float2 uv = texCoords;
-    
-    uv.x += 0.5;
-     uv = (uv * 2 - 1);
-    float3 ro = float3(0,0,-1);
-    float3 rd = normalize(float3(uv.y, uv.x, 1));
-    float d = 0;
-    float4 col = float4(0,0,0,1);
-    float z = 1;
-    float cone;
-    float3 p;
-    for (int i = 0; i < 12; i++)
-    {
-        p = z * (ro + rd);
-        
-        p.z -= 5;
-        for (d = 0.6; d < 15; d /= 0.1)
-            p += cos((p.yzx * 0.125 * (texCoords.x * 3) - float3(-time * 35, 3, -time * 20)) * d) / d;
-        p.xy *= 1.35;
-        cone = abs(length(p.xz * 2.25) - p.y);
-        z += d = cone;
-        
-    }
-    col = lerp(1,0,d);
-    col.a = col.r + col.b + col.g;
-    col = saturate(col);
-    float4 glow = 1 / distance(float2(.5, .5), cone * float2(1.2,1)) / 10;
-    glow = smoothstep(0.5, 1, glow);
-    col = floor(col * 5) / 5;
-    
-    return lerp(glow * float4(0, 1, 5, 1), float4(1, 1, 5, 1) * float4(color, 1), col.r);
-
+    float pulse = sin(time * 45) * 0.3 + 1;
+    float4 tex = tex2D(image1, uv + pulse * 0.01);
+    tex.a *= tex.r;
+    tex.rgb = tex.r * palette(uv.x / 2 + uv.y / 4) * float3(1, 0.3, 1) * step(0.1,tex.r);
+    tex = tanh(tex);
+    return tex;
 }
 
 technique t0
