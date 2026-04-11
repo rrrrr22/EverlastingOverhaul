@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System;
 using Terraria.Graphics.Shaders;
 using Terraria.ModLoader;
+using EverlastingOverhaul.Common.ItemOverhaul;
 
 
 namespace EverlastingOverhaul.Common.Graphics;
@@ -44,19 +45,26 @@ public class ModdedShaderHandler : ILoadable {
 	Texture2D _texutre2 = null;
 	Texture2D _texutre3 = null;
 	Vector4 _shaderData = new Vector4(0, 0, 0, 0);
+	bool usePasses = false;
+	string currentPass = "";
 	public bool enabled = false;
-	public ModdedShaderHandler(Asset<Effect> effect) {
+	bool repeat = true;
+	Color? secondColor = null;
+    public ModdedShaderHandler(Asset<Effect> effect) {
 
         _effect = effect;
 
 	}
-	public void setProperties(Color color, Texture2D texutre1 = null, Texture2D texutre2 = null, Texture2D texutre3 = null, Vector4 shaderData = default) {
+	public void setProperties(Color color, Texture2D texutre1 = null, Texture2D texutre2 = null, Texture2D texutre3 = null, Vector4 shaderData = default, bool usesPasses = false, bool repeat = true, Vector2? rect = null, Color? secondColor = null) {
         _color = color;
         _texutre1 = texutre1;
         _texutre2 = texutre2;
         _texutre3 = texutre3;
         _shaderData = shaderData;
-	}
+		this.usePasses = usesPasses;
+		this.repeat = repeat;
+		this.secondColor = secondColor;
+    }
 	public void setProperties(ShaderSettings shaderSettings) {
         _color = shaderSettings.Color;
         _texutre1 = shaderSettings.image1?.Value;
@@ -71,16 +79,16 @@ public class ModdedShaderHandler : ILoadable {
 	{
 
 		if (_texutre1 != null) {
-			GraphicsDevice.SamplerStates[1] = SamplerState.LinearWrap;
+			GraphicsDevice.SamplerStates[1] = repeat ? SamplerState.LinearWrap : SamplerState.LinearClamp;
 			GraphicsDevice.Textures[1] = _texutre1;
 		}
 		if (_texutre2 != null) {
-			GraphicsDevice.SamplerStates[2] = SamplerState.LinearWrap;
+			GraphicsDevice.SamplerStates[2] = repeat ? SamplerState.LinearWrap : SamplerState.LinearClamp;
 			GraphicsDevice.Textures[2] = _texutre2;
 		}
 		if (_texutre3 != null) {
-			GraphicsDevice.SamplerStates[3] = SamplerState.LinearWrap;
-			GraphicsDevice.Textures[3] = _texutre3;
+			GraphicsDevice.SamplerStates[3] = repeat ? SamplerState.LinearWrap : SamplerState.LinearClamp;
+            GraphicsDevice.Textures[3] = _texutre3;
 		}
 	}
 	public void apply() {
@@ -91,11 +99,28 @@ public class ModdedShaderHandler : ILoadable {
 		effect.Parameters["time"].SetValue(Main.GlobalTimeWrappedHourly);
 		effect.Parameters["color"].SetValue(_color.ToVector3());
 		effect.Parameters["shaderData"].SetValue(_shaderData);
-		effect.CurrentTechnique.Passes[0].Apply();
-		
-	}
+		//new optional stuff
+		effect.Parameters["ScreenRes"]?.SetValue(Main.ScreenSize.ToVector2());
+		effect.Parameters["Image1Size"]?.SetValue(_texutre1.Size());
+		effect.Parameters["Image2Size"]?.SetValue(_texutre2.Size());
+		effect.Parameters["Image3Size"]?.SetValue(_texutre3.Size());
+		effect.Parameters["SecondColor"]?.SetValue(secondColor.HasValue ? secondColor.Value.ToVector3() : Color.White.ToVector3());
+		if (usePasses) 
+		{
+			for (int i = 0; i < effect.CurrentTechnique.Passes.Count; i++)
+				effect.CurrentTechnique.Passes[i].Apply();
 
-	public void Load(Mod mod) {
+		}
+		else
+		{
+            if (currentPass == string.Empty)
+                effect.CurrentTechnique.Passes[0].Apply();
+            else
+                effect.CurrentTechnique.Passes[currentPass].Apply();
+        }
+    }
+
+    public void Load(Mod mod) {
 
 	}
 

@@ -7,6 +7,7 @@ using EverlastingOverhaul.Common.Utils;
 using EverlastingOverhaul.Content.Particles;
 using EverlastingOverhaul.Contents.Particles;
 using EverlastingOverhaul.Texture;
+using JetBrains.Annotations;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -258,7 +259,6 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
     {
 
     }
-
     public class DukeBG : ModSurfaceBackgroundStyle
     {
 
@@ -282,6 +282,89 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
 
 
     }
+    public class DukeRazorbladeVortex : BetterModProjectile 
+    {
+        public override void BetterSetDefaults()
+        {
+            Projectile.width = Projectile.height = 32;
+            Projectile.hostile = true;
+            Projectile.friendly = false;
+        }
+
+        private static Asset<Texture2D> vortexTex;
+        private static Asset<Texture2D> vortexShineTex;
+
+        public override void Load()
+        {
+            vortexTex = ModContent.Request<Texture2D>(ModTexture.CommonTextureStringPattern + "Vortex0");
+            vortexShineTex = ModContent.Request<Texture2D>(ModTexture.CommonTextureStringPattern + "Vortex1");
+        }
+        private static VertexRectangle rect = new();
+        private static VertexStrip strip = new();
+        public override bool PreDraw(ref Color lightColor)
+        {
+
+            Main.spriteBatch.End();
+            Main.spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Additive, Main.DefaultSamplerState, DepthStencilState.Default, Main.Rasterizer, null, Main.Transform);
+            float scale = 1 - (ModUtils.Frac((float)Main.timeForVisualEffects / 60f) * 1f) + 0.5f;
+            ModdedShaderHandler shader = EffectsLoader.shaderHandlers["DukeSawblades"];
+
+
+            float rot = (float)Main.timeForVisualEffects * 0.3f;
+            shader.setProperties(Color.Turquoise, vortexTex.Value,vortexShineTex.Value, shaderData: new Vector4(rot, 0, 0, 0), usesPasses: true, repeat: false);
+            shader.apply();
+            rect.Draw(Projectile.Center - Main.screenPosition, Color.Turquoise, new Vector2(256, 256), 0, Projectile.Center - Main.screenPosition);
+
+  
+            shader = EffectsLoader.shaderHandlers["DukeWaterStream"];
+            shader.setProperties(Color.White);
+            shader.apply();
+            strip.PrepareStripWithProceduralPadding(rotPos.cache, rots.cache,(_) => Color.White, (p) => 16 * (1-p),-Main.screenPosition, true);
+            strip.DrawTrail();
+            strip.PrepareStripWithProceduralPadding(rotPos2.cache, rots2.cache,(_) => Color.White, (p) => 16 * (1-p),-Main.screenPosition, true);
+            strip.DrawTrail();
+            return false;
+        }
+
+        public override void PostDraw(Color lightColor)
+        {
+            Main.spriteBatch.End();
+            ModUtils.ResetSpritebatchToVanilla();
+        }
+        Vector2 oldTrail = Vector2.Zero;
+        private DataCache<Vector2> rotPos = new(30);
+        private DataCache<Vector2> rotPos2 = new(30);
+        private DataCache<float> rots = new(30);
+        private DataCache<float> rots2 = new(30);
+        public override void AI()
+        {
+
+
+
+            Projectile.rotation += 0.5f;
+            Particle.NewParticle(Particle.ParticleType<BasicParticle>(), Projectile.Center - Main.rand.NextVector2Circular(128, 128), ParticleTemplates._default with { shaderID = "DukeWaterStream", lifetime = 32, dontDrawSelf = true, rotation = Projectile.velocity.ToRotation(), vertexRectSize = new Vector2(512 * Main.rand.NextFloat() + 32, 16), velocitySlowdown = .94f, velocity = Projectile.velocity * (1), startColor = Color.Cyan, endColor = Color.Cyan, endOpacity = 0, startOpacity = 1, startSize = Main.rand.NextFloat() * 1f, endSize = 0 });
+
+            for (int i = 0; i < 30; i++) 
+            {
+
+
+
+                Vector2 newPos1 = Projectile.Center + Projectile.velocity + (Vector2.UnitX.RotatedBy(MathHelper.Pi * (i / 30f) + Projectile.rotation) * 128);
+                Vector2 newPos2 = Projectile.Center + Projectile.velocity + Vector2.UnitX.RotatedBy(MathHelper.Pi * (i / 30f) + MathHelper.Pi + Projectile.rotation)* 128;
+
+                rotPos.cache[i] = newPos1;
+                rotPos2.cache[i] = newPos2;
+
+
+                rots.cache[i] = (Projectile.Center.DirectionTo(newPos1).ToRotation() + MathHelper.PiOver2 );
+                rots2.cache[i] = (Projectile.Center.DirectionTo(newPos2).ToRotation() + MathHelper.Pi + MathHelper.PiOver2);
+
+
+            }
+
+        }
+
+    }
     public class Duke_AIState : AIState
     {
         public override void SetDefaults()
@@ -303,7 +386,7 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
         internal void DukeDash(int dashDuration = 15) 
         {
             dashFramesRemaining = dashDuration;
-            npc.velocity = dashDir * 70;
+            npc.velocity = dashDir * 90;
             npc.rotation = npc.velocity.ToRotation();
             npc.ai[2] = 1;
             dashTrailScale = new Tween<Vector2>(Vector2.Lerp).TweenProperty([
@@ -360,7 +443,11 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
         internal Vector2 currentDashTrailScale = Vector2.Zero;
         public override bool StatePreDraw(ref DrawData mainSprite, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
         {
-             return true;
+
+            spriteBatch.End();
+            spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Additive, Main.DefaultSamplerState, DepthStencilState.None, Main.Rasterizer, null);
+
+            return true;
         }
         public override void StatePostDraw(SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
         {
@@ -369,10 +456,7 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
 
             if (npc.ai[2] == 0)
                 return;
-
-            spriteBatch.End();
-            spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Additive, Main.DefaultSamplerState, DepthStencilState.None, Main.Rasterizer, null);
-            ModdedShaderHandler shader = EffectsLoader.shaderHandlers["DukeTornado"];
+ ModdedShaderHandler shader = EffectsLoader.shaderHandlers["DukeTornado"];
 
             for(float i = 0.2f; i < 1; i += 0.1f) 
             {
@@ -486,7 +570,6 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
         }
 
     }
-
     public class Duke_Circle1 : Duke_AIState
     {
         int fireDelay = 0;
@@ -634,42 +717,84 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
 
         public override void OnStateUpdate(CommonNPCInfo info)
         {
-            if (counter < 30)
+
+            if(counter < 35) 
             {
-
-                
-                
-                npc.Center = npc.Center.MoveTowards(Target.Center, Target.Center.Distance(npc.Center) / 500 * 4f);
-
                 dashDir = npc.DirectionTo(Target.Center + Target.velocity * 0.25f);
-                npc.velocity = -dashDir * MathF.Sin((counter) * .255f) * 15f;
+            }
 
-                npc.rotation = dashDir.ToRotation();
+            if (counter < 45)
+            {
+                npc.Center = npc.Center.MoveTowards(Target.Center, Target.Center.Distance(npc.Center) / 850 * 14f);
+
+                npc.rotation = npc.rotation.AngleTowards(dashDir.ToRotation(),0.2f);
                 LookAtNpcRot();
                 return;
             }
 
-            if (counter == 30)
+            if (counter == 45)
             {
-                if (isSuper) 
-                {
-                    dashDir = npc.DirectionTo(Target.Center + Target.velocity * 3);
-                }
+
 
                 DukeDash(30);
-            }
-
-            if(counter == 60 && isSuper) 
-            {
-                npc.velocity = Vector2.Zero;
-                dashDir = npc.DirectionTo(Target.Center);
-                DukeDash(30);
-                isSuper = false;
             }
 
             if (CounterBetween(42, 60))
             {
-                npc.velocity *= 0.92f;
+                npc.velocity *= 0.95f;
+            }
+
+            if (counter > 60 && dashFramesRemaining <= 0)
+            {
+                npc.velocity = Vector2.Zero;
+                if (dashCounter >= 7)
+                {
+                    dashCounter = 0;
+                    ChangeState<Duke_Dash>();
+                    return;
+                }
+
+                if(dashCounter == 3 || dashCounter == 6)
+                    isSuper = true;
+                ChangeState<Duke_Dash>();
+                dashCounter++;
+            }
+        }
+
+    }
+    public class Duke_Super_Dash : Duke_AIState
+    {
+        int dashCounter = 0;
+        bool isSuper = false;
+
+        public override void OnStateUpdate(CommonNPCInfo info)
+        {
+
+            if(counter < 35) 
+            {
+                dashDir = npc.DirectionTo(Target.Center + Target.velocity * 0.25f);
+            }
+
+            if (counter < 45)
+            {
+                npc.Center = npc.Center.MoveTowards(Target.Center, Target.Center.Distance(npc.Center) / 850 * 14f);
+
+                npc.rotation = npc.rotation.AngleTowards(dashDir.ToRotation(),0.2f);
+                LookAtNpcRot();
+                return;
+            }
+
+            if (counter == 45)
+            {
+
+
+                DukeDash(15);
+                npc.velocity *= 1.25f;
+            }
+
+            if (CounterBetween(42, 60))
+            {
+                npc.velocity *= 0.95f;
             }
 
             if (counter > 60 && dashFramesRemaining <= 0)

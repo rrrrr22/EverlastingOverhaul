@@ -22,10 +22,11 @@ namespace EverlastingOverhaul.Common.Graphics.Primitives {
 
 			vertices[0].TextureCoordinate = Vector2.Zero;
 			vertices[1].TextureCoordinate = new Vector2(1, 0);
-			vertices[2].TextureCoordinate = new Vector2(0, 1);
-			vertices[3].TextureCoordinate = Vector2.One;
+			vertices[2].TextureCoordinate = new Vector2(0,1);
+            vertices[3].TextureCoordinate = new Vector2(1, 1);
 
-			vertices[0].Color = color;
+			
+            vertices[0].Color = color;
 			vertices[1].Color = color;
 			vertices[2].Color = color;
 			vertices[3].Color = color;

@@ -65,6 +65,10 @@ namespace EverlastingOverhaul.Common.Utils
             Array.Resize(ref array, array.Length + 1);
             array.Push(value);
         }
+        public static void ResetSpritebatchToVanilla() 
+        {
+            Main.spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, Main.DefaultSamplerState, DepthStencilState.None, Main.Rasterizer, null, Main.Transform);
+        }
         public static void Push<T>(this T[] array, T value)
         {
             Array.Copy(array, 0, array, 1, array.Length - 1);

@@ -7,19 +7,7 @@ float time;
 float4 shaderData;
 float3 color;
 
-struct VertexShaderInput
-{
-    float4 pos : POSITION0;
-    float4 col : COLOR0;
-    float2 texCoord : TEXCOORD0;
-};
 
-struct VertexShaderOutput
-{
-    float4 pos : SV_POSITION;
-    float4 col : COLOR0;
-    float2 texCoord : TEXCOORD0;
-};
 float sinBetween(float a, float b, float v)
 {
     float h = (b - a) / 2.;
@@ -76,40 +64,45 @@ float2 strikeShape(float2 uv)
     tail = abs(uv.x * uv.y);
     
     //ball
-    float ball = 1/abs(length(uv * 2 - 1)) / 15;
+    float ball = 1 / abs(length(uv * 2 - 1)) / 15;
     
     
     
     return uv;
 }
+
+float2 Rotate(float2 uv, float angle, float2 pivot)
+{
+    float2x2 rotationMatrix = float2x2(cos(angle), sin(angle), -sin(angle),cos(angle));
+    uv -= pivot;
+    float2 r = mul(rotationMatrix, uv);
+    r += pivot;
+    return r;
+    
+}
+
 float3 palette(float t)
 {
-    float3 a = float3(-0.462,3.078,0.878);
+    float3 a = float3(-0.462, 3.078, 0.878);
     float3 b = float3(1.564, 2.450, -0.112);
     float3 c = float3(1.860
-    ,1.208 ,- 6.142);
+    , 1.208, -6.142);
     float3 d = float3(6.285
-    ,6.285
-    ,6.813);
+    , 6.285
+    , 6.813);
 
     return a + b * cos(6.28318 * (c * t + d));
 }
-
 float4 ShaderPS(float4 vertexColor : COLOR0, float2 texCoords : TEXCOORD0) : COLOR0
 {
     float2 uv = texCoords;
-    float pulse = sin(time * 45) * 0.3 + 1;
-    float4 tex;
-    for (float i = 3.141519 * 2; i > 0; i -= 3.141519 * 2 / 8)
-    {
-        float4 texTemp = tex2D(image1, uv + (cos(i) * sin(i)) * 1.2);
-        texTemp.a *= texTemp.r;
-        texTemp.rgb = texTemp.r * palette(uv.x / 2 + uv.y / 4) * float3(1, 0.3, 1);
-        texTemp = tanh(texTemp);
-        tex += texTemp;
-
-    }
-        return tex;
+    float4 tex = tex2D(image1, Rotate(texCoords, shaderData.x * 1.6, float2(0.5, .5)));
+    float4 shineTex = tex2D(image2, Rotate(texCoords, 3.141519 + shaderData.x * 0.8, float2(0.5, .5)));
+    shineTex += tex2D(image2, Rotate(texCoords, shaderData.x * 1.6, float2(0.5, .5)));
+    tex.a *= tex.r;
+    uv = Rotate(uv, shaderData.x, float2(0.5, .5));
+    tex.rgb = tex.r * palette((uv.x / 2 + uv.y / 4) - shineTex.r) * float3(1, 0.3, 1) * shineTex.r;
+    return float4(tex.r,tex.g,tex.b, tex.a / 1);
 }
 
 technique t0

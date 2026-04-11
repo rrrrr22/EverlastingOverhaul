@@ -61,22 +61,9 @@ float4 ShaderPS(float4 vertexColor : COLOR0, float2 texCoords : TEXCOORD0) : COL
 
 
     float2 uv = (texCoords) * 2 - 1;
-    uv *= 10;
-    float3 ro = float3(0, 0, -1);
-    float3 rd = normalize(float3(uv.x, uv.y, 1));
-    float t = 0;
-    float4 col = float4(0, 0, 0, 0);
-    float z = 0;
-    float d = 1;
-    float3 p = 0;
-
+    float4 tex = tex2D(image1,uv);
     
-    col.rgb = 0.5 * exp2(0.1 * uv.x * float3(-1, 0, 2));;
-    //Vary brightness
-    col /= dot(cos(uv * 3.), sin(-uv.yx * 3. * .618)) + 3.0;
-    //Exponential tonemap
-    col = 1.0 - exp(-col);
-    return float4(float3(0,0,0), 1);
+    return tex;
 
 
 }
