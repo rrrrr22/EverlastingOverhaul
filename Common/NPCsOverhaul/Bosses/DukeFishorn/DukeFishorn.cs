@@ -207,8 +207,16 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
         public override SceneEffectPriority Priority => SceneEffectPriority.BiomeHigh;
         public override bool IsBiomeActive(Player player)
         {
-            DisableWorldBackgroundElements();
-            return true;
+
+            foreach (var npc in Main.ActiveNPCs)
+            {
+                if(npc.type == NPCID.DukeFishron && npc.Distance(player.Center) < 10000) 
+                {
+                    return true;
+                }
+            }
+            
+            return false;
         }
 
         public static void DisableWorldBackgroundElements()
@@ -261,21 +269,27 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
     }
     public class DukeBG : ModSurfaceBackgroundStyle
     {
-
-
+        private static Asset<Texture2D> waterBG;
+        public override void Load()
+        {
+            waterBG = ModContent.Request<Texture2D>(ModTexture.CommonTextureStringPattern + "WaterBG");
+        }
         public override void ModifyFarFades(float[] fades, float transitionSpeed)
         {
+            fades[0] = MathHelper.Clamp(fades[0] - transitionSpeed, 0, 1);
+            bgY = MathHelper.Clamp(fades[0], 0, 1);
+
         }
         private static VertexRectangle rect = new();
-
+        float bgY = 0;
         public override bool PreDrawCloseBackground(SpriteBatch spriteBatch)
         {
             ModdedShaderHandler handler = EffectsLoader.shaderHandlers["DukeBG"];
 
-            handler.setProperties(Color.White, TextureAssets.Extra[193].Value, shaderData: new Vector4(Main.Camera.Center.X, Main.Camera.Center.Y, Main.ScreenSize.X, Main.ScreenSize.Y));
+            handler.setProperties(Color.White, waterBG.Value, shaderData: new Vector4(Main.Camera.Center.X, Main.Camera.Center.Y, Main.ScreenSize.X, Main.ScreenSize.Y));
             handler.apply();
 
-            rect.Draw(Main.Camera.Center - Main.screenPosition, Color.White,new(Main.ScreenSize.X,Main.ScreenSize.Y),0, Main.Camera.Center - Main.screenPosition);
+            rect.Draw(Main.Camera.Center - Vector2.Lerp(new Vector2(0, Main.ScreenSize.Y), new Vector2(0,0),1) - Main.screenPosition, Color.White,Main.ScreenSize.ToVector2(),0, Main.Camera.Center - Main.screenPosition);
 
             return false;
         }
@@ -284,13 +298,30 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
     }
     public class DukeRazorbladeVortex : BetterModProjectile 
     {
+        Vector2 vel = Vector2.Zero;
+        Tween<Vector2> currentVel;
+        Tween<float> alpha;
+
         public override void BetterSetDefaults()
         {
-            Projectile.width = Projectile.height = 32;
+            Projectile.width = Projectile.height = 256;
             Projectile.hostile = true;
             Projectile.friendly = false;
+            Projectile.timeLeft = 300;
         }
-
+        public override void OnSpawn(IEntitySource source, Vector2 spawnPosition)
+        {
+            vel = Projectile.velocity;
+            Projectile.velocity = Vector2.Zero;
+            currentVel = new Tween<Vector2>(Vector2.Lerp).TweenProperty([new TweenCache<Vector2>(Vector2.Zero,vel * 0.1f,false,TweenEaseType.None,60),
+            new TweenCache<Vector2>(vel * 0.1f,vel,false,TweenEaseType.None,30),
+            new TweenCache<Vector2>(vel,-vel,false,TweenEaseType.None,60)]);
+            alpha = new Tween<float>(MathHelper.Lerp).TweenProperty([new(0, 1, false, TweenEaseType.None, 30)]);
+            for(int i = 60; i > 0; i--) 
+            {
+                Particle.NewParticle<BasicParticle>(Projectile.Center, ParticleTemplates._default with { shaderID = "DukeWaterStream", lifetime = 32, dontDrawSelf = true, rotation = 0, vertexRectSize = new Vector2(127, 127), velocitySlowdown = .94f, velocity = Main.rand.NextVector2CircularEdge(16,16), startColor = Color.Cyan, endColor = Color.Cyan, endOpacity = 0, startOpacity = 1, startSize = Main.rand.NextFloat() * 1f, endSize = 0 });
+            }
+        }
         private static Asset<Texture2D> vortexTex;
         private static Asset<Texture2D> vortexShineTex;
 
@@ -310,8 +341,8 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
             ModdedShaderHandler shader = EffectsLoader.shaderHandlers["DukeSawblades"];
 
 
-            float rot = (float)Main.timeForVisualEffects * 0.3f;
-            shader.setProperties(Color.Turquoise, vortexTex.Value,vortexShineTex.Value, shaderData: new Vector4(rot, 0, 0, 0), usesPasses: true, repeat: false);
+            float rot = Projectile.rotation;
+            shader.setProperties(Color.Turquoise, vortexTex.Value,vortexShineTex.Value, shaderData: new Vector4(rot, alpha, 0, 0), usesPasses: true, repeat: false);
             shader.apply();
             rect.Draw(Projectile.Center - Main.screenPosition, Color.Turquoise, new Vector2(256, 256), 0, Projectile.Center - Main.screenPosition);
 
@@ -323,6 +354,15 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
             strip.DrawTrail();
             strip.PrepareStripWithProceduralPadding(rotPos2.cache, rots2.cache,(_) => Color.White, (p) => 16 * (1-p),-Main.screenPosition, true);
             strip.DrawTrail();
+
+
+            shader = EffectsLoader.shaderHandlers["DukeEye"];
+            shader.setProperties(Color.Turquoise);
+            shader.apply();
+
+            rect.Draw(Projectile.Center - Main.screenPosition, Color.Turquoise, new Vector2(1024 , 1024) * (Terraria.Utils.PingPongFrom01To010(ModUtils.OutSine(alpha))), vel.ToRotation(), Projectile.Center - Main.screenPosition);
+
+
             return false;
         }
 
@@ -339,9 +379,16 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
         public override void AI()
         {
 
+            Projectile.velocity = currentVel.currentProgress;
+            
+            if(Projectile.timeLeft < 250 && Projectile.timeLeft % 15 == 0) 
+            {
+                SoundEngine.PlaySound(SoundID.Item22 with { Pitch = 0.1f, Volume = 0.4f }, Projectile.Center);
+
+            }
 
 
-            Projectile.rotation += 0.5f;
+            Projectile.rotation += Projectile.velocity.Length() * 0.025f;
             Particle.NewParticle(Particle.ParticleType<BasicParticle>(), Projectile.Center - Main.rand.NextVector2Circular(128, 128), ParticleTemplates._default with { shaderID = "DukeWaterStream", lifetime = 32, dontDrawSelf = true, rotation = Projectile.velocity.ToRotation(), vertexRectSize = new Vector2(512 * Main.rand.NextFloat() + 32, 16), velocitySlowdown = .94f, velocity = Projectile.velocity * (1), startColor = Color.Cyan, endColor = Color.Cyan, endOpacity = 0, startOpacity = 1, startSize = Main.rand.NextFloat() * 1f, endSize = 0 });
 
             for (int i = 0; i < 30; i++) 
@@ -386,7 +433,7 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
         internal void DukeDash(int dashDuration = 15) 
         {
             dashFramesRemaining = dashDuration;
-            npc.velocity = dashDir * 90;
+            npc.velocity = dashDir * 125;
             npc.rotation = npc.velocity.ToRotation();
             npc.ai[2] = 1;
             dashTrailScale = new Tween<Vector2>(Vector2.Lerp).TweenProperty([
@@ -718,21 +765,25 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
         public override void OnStateUpdate(CommonNPCInfo info)
         {
 
-            if(counter < 35) 
+            if (counter < 15) 
             {
+                npc.velocity = npc.DirectionTo(Target.Center + Target.velocity) * MathHelper.Clamp(MathHelper.Lerp(1f,-.5f,(counter / 15f)) * 75,-75, 75);
+
                 dashDir = npc.DirectionTo(Target.Center + Target.velocity * 0.25f);
             }
 
-            if (counter < 45)
-            {
-                npc.Center = npc.Center.MoveTowards(Target.Center, Target.Center.Distance(npc.Center) / 850 * 14f);
+   
 
-                npc.rotation = npc.rotation.AngleTowards(dashDir.ToRotation(),0.2f);
+            if (counter < 30)
+            {
+                npc.Center = npc.Center.MoveTowards(Target.Center, Target.Center.Distance(npc.Center) / 500 * 38f);
+
+                npc.rotation = npc.rotation.AngleTowards(dashDir.ToRotation(),1f);
                 LookAtNpcRot();
                 return;
             }
 
-            if (counter == 45)
+            if (counter == 30)
             {
 
 
@@ -747,15 +798,19 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
             if (counter > 60 && dashFramesRemaining <= 0)
             {
                 npc.velocity = Vector2.Zero;
-                if (dashCounter >= 7)
+                if (dashCounter >= 1555)
                 {
                     dashCounter = 0;
-                    ChangeState<Duke_Dash>();
+                    ChangeState<Duke_Circle1>();
                     return;
                 }
 
-                if(dashCounter == 3 || dashCounter == 6)
-                    isSuper = true;
+                if (dashCounter % 3 == 1)
+                {
+                    Vector2 dir = Main.rand.NextBool() ? Vector2.UnitX : Vector2.UnitY;
+                    NPCReworkerFSM.NewProjectileWithMPCheck(npc.GetSource_FromAI(), Target.Center + new Vector2(-700, 0).RotatedBy(dir.ToRotation()), dir * 55, ModContent.ProjectileType<DukeRazorbladeVortex>(), npc.damage / 2, 15);
+                    NPCReworkerFSM.NewProjectileWithMPCheck(npc.GetSource_FromAI(), Target.Center + new Vector2(700,0).RotatedBy(dir.ToRotation()), -dir * 55, ModContent.ProjectileType<DukeRazorbladeVortex>(), npc.damage / 2, 15);
+                 }
                 ChangeState<Duke_Dash>();
                 dashCounter++;
             }

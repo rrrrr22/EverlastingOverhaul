@@ -6,6 +6,7 @@ float4x4 viewWorldProjection;
 float time;
 float4 shaderData;
 float3 color;
+float2 CameraPositionMovement;
 
 float2 Rotate(float2 uv, float amount)
 {
@@ -18,7 +19,18 @@ float2 Rotate(float2 uv, float amount)
     return uv2;
     
 }
+float3 palette(float t)
+{
+    float3 a = float3(-0.462, 3.078, 0.878);
+    float3 b = float3(1.564, 2.450, -0.112);
+    float3 c = float3(1.860
+    , 1.208, -6.142);
+    float3 d = float3(6.285
+    , 6.285
+    , 6.813);
 
+    return a + b * cos(6.28318 * (c * t + d));
+}
 float2 expandInsideOutside(float2 uv)
 {
     float1 t = time + shaderData.w;
@@ -43,8 +55,9 @@ float4 Star(float2 uv)
 
     glow *= smoothstep(0, 1, glow / 22 * pulse);
     starShape *= smoothstep(0, 1, length(glow) * 100);
-    float4 star = smoothstep(0, 1, float4((starShape + glow / 2) * (color) * 2, starShape));
+    float4 star = smoothstep(0, 1, float4((starShape + glow / 2) * 2 * color, starShape));
     star = tanh(star);
+    star.rgb *= palette(star.r / 2);
     return star;
 }
 

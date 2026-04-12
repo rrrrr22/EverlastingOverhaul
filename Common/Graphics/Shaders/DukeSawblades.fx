@@ -102,7 +102,18 @@ float4 ShaderPS(float4 vertexColor : COLOR0, float2 texCoords : TEXCOORD0) : COL
     tex.a *= tex.r;
     uv = Rotate(uv, shaderData.x, float2(0.5, .5));
     tex.rgb = tex.r * palette((uv.x / 2 + uv.y / 4) - shineTex.r) * float3(1, 0.3, 1) * shineTex.r;
-    return float4(tex.r,tex.g,tex.b, tex.a / 1);
+    
+    //motion blur
+
+    float4 texBlur = tex2Dlod(image1, float4(uv.x, uv.y,3.5,.2)).r;
+    for (float i = 3.141519 * 2; i > 0; i -= 3.141519 / 8)
+    {
+        uv = Rotate(uv, i, float2(.5,.5));
+        texBlur *= tex2D(image1, float2(uv.x, uv.y)).a;
+
+    }
+    
+        return tex *shaderData.y;
 }
 
 technique t0

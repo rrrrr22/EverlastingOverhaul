@@ -6,6 +6,7 @@ float4x4 viewWorldProjection;
 float time;
 float4 shaderData;
 float3 color;
+float2 CameraPositionMovement;
 
 
 struct VertexShaderInput
@@ -50,6 +51,32 @@ float3 OneBasedRGB(float3 rgb)
 {
     return rgb / 255;
 }
+float3 palette(float t)
+{
+    float3 a = float3(-0.632
+    ,0.448
+    ,0.448);
+    float3 b = float3(0.000
+    ,0.500
+    ,0.500);
+    float3 c = float3(0.000
+    ,0.500
+    ,0.448);
+    float3 d = float3(2.088
+    ,0.468
+    ,0.667);
+
+    return a + b * cos(6.28318 * (c * t + d));
+}
+float2 Rotate(float2 uv, float angle, float2 pivot)
+{
+    float2x2 rotationMatrix = float2x2(cos(angle), sin(angle), -sin(angle), cos(angle));
+    uv -= pivot;
+    float2 r = mul(rotationMatrix, uv);
+    r += pivot;
+    return r;
+    
+}
 
 float4 ShaderPS(float4 vertexColor : COLOR0, float2 texCoords : TEXCOORD0) : COLOR0
 {
@@ -58,12 +85,32 @@ float4 ShaderPS(float4 vertexColor : COLOR0, float2 texCoords : TEXCOORD0) : COL
     //float4 tex1 = tex2D(image1, uv + shaderData.xy / 5120 + time * 0.05) * float4(0.5, 0.25, 1, 1);
     //float4 texClouds = tex2D(image1, uv * float2(1, 3) + shaderData.xy / 3840 + time * 0.01) * float4(uv.y, uv.y, uv.y, 1) * float4(0, 0.2, 2, 1);
     //return tex1 * tex2D(image1, uv + shaderData.xy / 1920 + time * 0.03) * float4(1, 0.25, 1, 1) + texClouds;
-
-
-    float2 uv = (texCoords) * 2 - 1;
-    float4 tex = tex2D(image1,uv);
+    float2 ogCoords = texCoords; //float2(texCoords.x, (sin(texCoords.x + time) + time) * 0.1 - texCoords.y);
+    texCoords = Rotate(texCoords, 3.141519, float2(.5,.5));
+    float thunder = 1 / frac((time) * 0.25) * 0.3;
+    float4 col = float4(0, 0, 0, 1);
+    texCoords *= float2(1,.7);
+    for (int i = 0; i < 3; i++)
+    {
+        float2 uv = (texCoords - CameraPositionMovement * 0.25 ) * 2 - 1 ;
+        uv += uv * i * 0.1;
+        float2 wobbleUV = float2(uv.x + i * 0.7, exp(sin(uv.y * .75 + time * 0.5)));
     
-    return tex;
+        float4 texTEMP = tex2D(image1, wobbleUV + float2(.5 + exp2(i * 1.41), time * .4 + .25));
+        float4 texTEMP2 = tex2D(image1, wobbleUV + float2(time * 0.1, 0));
+        float4 texTEMP3 = tex2D(image1, wobbleUV + float2(-time * 0.1 + .8, .1));
+
+        float4 tex = tex2D(image1, uv + float2(.2 + exp2(i * 1.41), time * 0.4)) + texTEMP.r / 2;
+        tex.r *= texTEMP2.r;
+        tex.r *= texTEMP3.r;
+        tex.rgb *= palette(tex.r + cos(time + tex.r ) * 0.1) / 14;
+        tex.rgb *= clamp(thunder * 3, 1, thunder * 3);
+        
+        col += tex;
+        
+    }
+
+    return col;
 
 
 }

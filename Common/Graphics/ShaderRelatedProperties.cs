@@ -105,6 +105,7 @@ public class ModdedShaderHandler : ILoadable {
 		effect.Parameters["Image2Size"]?.SetValue(_texutre2.Size());
 		effect.Parameters["Image3Size"]?.SetValue(_texutre3.Size());
 		effect.Parameters["SecondColor"]?.SetValue(secondColor.HasValue ? secondColor.Value.ToVector3() : Color.White.ToVector3());
+		effect.Parameters["CameraPositionMovement"]?.SetValue(Main.Camera.Center / Main.ScreenSize.ToVector2());
 		if (usePasses) 
 		{
 			for (int i = 0; i < effect.CurrentTechnique.Passes.Count; i++)
