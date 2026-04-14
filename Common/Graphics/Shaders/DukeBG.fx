@@ -85,34 +85,61 @@ float4 ShaderPS(float4 vertexColor : COLOR0, float2 texCoords : TEXCOORD0) : COL
     //float4 tex1 = tex2D(image1, uv + shaderData.xy / 5120 + time * 0.05) * float4(0.5, 0.25, 1, 1);
     //float4 texClouds = tex2D(image1, uv * float2(1, 3) + shaderData.xy / 3840 + time * 0.01) * float4(uv.y, uv.y, uv.y, 1) * float4(0, 0.2, 2, 1);
     //return tex1 * tex2D(image1, uv + shaderData.xy / 1920 + time * 0.03) * float4(1, 0.25, 1, 1) + texClouds;
-    float2 ogCoords = texCoords; //float2(texCoords.x, (sin(texCoords.x + time) + time) * 0.1 - texCoords.y);
-    texCoords = Rotate(texCoords, 3.141519, float2(.5,.5));
-    float thunder = 1 / frac((time) * 0.25) * 0.3;
-    float4 col = float4(0, 0, 0, 1);
-    texCoords *= float2(1,.7);
-    for (int i = 0; i < 3; i++)
-    {
-        float2 uv = (texCoords - CameraPositionMovement * 0.25 ) * 2 - 1 ;
-        uv += uv * i * 0.1;
-        float2 wobbleUV = float2(uv.x + i * 0.7, exp(sin(uv.y * .75 + time * 0.5)));
     
-        float4 texTEMP = tex2D(image1, wobbleUV + float2(.5 + exp2(i * 1.41), time * .4 + .25));
-        float4 texTEMP2 = tex2D(image1, wobbleUV + float2(time * 0.1, 0));
-        float4 texTEMP3 = tex2D(image1, wobbleUV + float2(-time * 0.1 + .8, .1));
+    //texCoords *= 2 - 1;
+    //texCoords -= float2(.5, .5);
+    //texCoords *= shaderData.x;
+    //texCoords += float2(.5, .5);
+    //float2 ogCoords = texCoords; //float2(texCoords.x, (sin(texCoords.x + time) + time) * 0.1 - texCoords.y);
+    //texCoords.y = exp2(texCoords.y);
+    //texCoords = Rotate(texCoords, 3.141519, float2(.5,.5));
+    //float thunder = 1 / frac((time) * 0.25) * 0.3;
+    //float4 col = float4(0, 0, 0,0);
+    //texCoords *= float2(1,.7);
+    //for (int i = 0; i < 3; i++)
+    //{
+    //    float2 uv = (texCoords - CameraPositionMovement * 0.25 ) * 2 - 1 ;
+    //    uv += uv * i * 0.1;
+    //    float2 wobbleUV = float2(uv.x + i * 0.7, exp(sin(uv.y * .75 + time * 0.5)));
+    
+    //    float4 texTEMP = tex2D(image1, wobbleUV + float2(.5 + exp2(i * 1.41), time * .4 + .25));
+    //    float4 texTEMP2 = tex2D(image1, wobbleUV + float2(time * 0.1, 0));
+    //    float4 texTEMP3 = tex2D(image1, wobbleUV + float2(-time * 0.1 + .8, .1));
 
-        float4 tex = tex2D(image1, uv + float2(.2 + exp2(i * 1.41), time * 0.4)) + texTEMP.r / 2;
-        tex.r *= texTEMP2.r;
-        tex.r *= texTEMP3.r;
-        tex.rgb *= palette(tex.r + cos(time + tex.r ) * 0.1) / 14;
-        tex.rgb *= clamp(thunder * 3, 1, thunder * 3);
+    //    float4 tex = tex2D(image1, uv + float2(.2 + exp2(i * 1.41), time * 0.4)) + texTEMP / 2;
+    //    tex.r *= texTEMP2.r;
+    //    tex.r *= texTEMP3.r;
+    //    tex.rgb *= palette(tex.r + cos(time + tex.r ) * 0.1) / 7;
+    //    tex.rgb *= clamp(thunder * 3, 1, thunder * 3);
         
-        col += tex;
+    //    col += tex;
         
+    //}
+
+    //float4 edge = float4((ogCoords.y) * 3, (ogCoords.y) * 3, (ogCoords.y) * 3, (ogCoords.y) * 3);
+    //col.rgba *= smoothstep(col.rgba, float4(0,0,0,0), edge);
+    //return col;
+
+    
+    float4 col = 0;
+    texCoords.x -= .5;
+    texCoords.x *= shaderData.x;
+    texCoords.x += .5;
+    float2 grad = length((texCoords.y * 2));
+    for (int i = 0; i < 5; i++)
+    {
+        float UVy = (texCoords.y - 0.25);
+        float UVx = (texCoords.x - time * 0.01);
+        float2 uv = float2(sin(time + texCoords.y * 3) * 0.075 + texCoords.x, UVy - 0.5);
+        float4 texMask = tex2D(image1, float2(UVx, uv.y));
+        float4 texMask2 = tex2D(image1, float2(-UVx, uv.y));
+        float4 tex = tex2D(image1, float2(uv.x - i * 0.1, uv.y - i * 0.01 * 0.67 - 0.5));
+        tex.rgb *= palette(sin(tex.r + i * 0.02)+ texMask.r + texMask2.r);
+        col += tex / 7;
     }
-
-    return col;
-
-
+    
+    return col * grad.y;
+    
 }
 
 technique t0

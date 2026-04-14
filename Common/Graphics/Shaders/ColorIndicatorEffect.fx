@@ -61,9 +61,9 @@ float2 expandInsideOutside(float2 uv)
 float4 ShaderPS(float4 vertexColor : COLOR0, float2 texCoords : TEXCOORD0) : COLOR0
 {
     
-    float laserStyle = length((abs(texCoords.y) - 1) / 120) * length(1 / (abs(texCoords.x * 2 - 1) - 0.5));
+    float laserStyle = length((abs(texCoords.x) - 1) / 120) * length(1 / (abs(texCoords.y) - 0.5));
     float4 coloredLine = float4(color.rgb * laserStyle,laserStyle);
-    return coloredLine;
+    return coloredLine * smoothstep(0,1,laserStyle * texCoords.y);
     
 }
 

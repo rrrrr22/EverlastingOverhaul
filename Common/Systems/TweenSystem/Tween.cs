@@ -97,6 +97,9 @@ public class Tween<T> : ITween where T : struct
             case TweenEaseType.OutExpo:
                 currentProgressPercentage = ModUtils.OutExpo(currentDuration / (float)endDuration, 4);
                 break;
+            case TweenEaseType.OutBack:
+                currentProgressPercentage = ModUtils.OutBack(currentDuration / (float)endDuration);
+                break;
         }
         if (tween.Pingpong)
             Terraria.Utils.PingPongFrom01To010(currentProgressPercentage);

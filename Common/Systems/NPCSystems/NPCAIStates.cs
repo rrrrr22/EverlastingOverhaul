@@ -9,6 +9,7 @@ using Terraria;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.ModLoader.Config;
+using EverlastingOverhaul.Common.Graphics;
 
 namespace EverlastingOverhaul.Common.Systems.NPCReworker
 {
@@ -27,7 +28,7 @@ namespace EverlastingOverhaul.Common.Systems.NPCReworker
         /// <summary>
         /// Make sure to apply screenPos and drawColor before using it
         /// </summary>
-        public DrawData currentSprite = new DrawData();
+        public DrawData currentSprite = Placeholders.DrawDataPlaceholder;
         public NPC npc
         {
             get
@@ -87,7 +88,8 @@ namespace EverlastingOverhaul.Common.Systems.NPCReworker
             }
             currentState.OnPostStateUpdate();
             currentState.UpdateCurrentSpriteFrame();
-            currentSprite = currentState.UpdateCurrentSprite();
+            currentState.UpdateCurrentSprite();
+            currentSprite = currentState.BaseSprite ?? Placeholders.DrawDataPlaceholder;
             currentState.counter++;
         }
         public void OnStateChange(AIState oldState)

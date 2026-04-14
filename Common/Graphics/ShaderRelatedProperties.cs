@@ -77,8 +77,7 @@ public class ModdedShaderHandler : ILoadable {
 	/// </summary>
 	public void setupTextures() 
 	{
-
-		if (_texutre1 != null) {
+        if (_texutre1 != null) {
 			GraphicsDevice.SamplerStates[1] = repeat ? SamplerState.LinearWrap : SamplerState.LinearClamp;
 			GraphicsDevice.Textures[1] = _texutre1;
 		}

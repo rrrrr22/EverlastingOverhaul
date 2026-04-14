@@ -20,8 +20,10 @@ using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
+using Terraria.GameContent.Skies;
 using Terraria.Graphics;
 using Terraria.Graphics.CameraModifiers;
+using Terraria.Graphics.Effects;
 using Terraria.Graphics.Shaders;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -42,6 +44,7 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
             AIState.StateType<Duke_Spawn>(),
             AIState.StateType<Boss_Despawn_State>(),
             AIState.StateType<Duke_Dash>(),
+            AIState.StateType<Duke_Super_Dash>(),
             AIState.StateType<Duke_Circle1>(),
             AIState.StateType<Duke_Super_Tornado>(),
             AIState.StateType<Duke_Phase2_Transition>(),
@@ -138,11 +141,68 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
     }
     public class DukeShadows : BetterModProjectile
     {
-
+        private static Asset<Texture2D> dashTexture;
+        Vector2 vel = Vector2.Zero;
+        Tween<Vector2> indicatorAnim;
+        bool isDashing = false;
+        public override void Load()
+        {
+            dashTexture = ModContent.Request<Texture2D>(ModTexture.CommonTextureStringPattern + "Dash0");
+        }
+        private static VertexRectangle rectDash = new();
         public override bool PreDraw(ref Color lightColor)
         {
-            //Main.EntitySpriteDraw(TextureAssets.DukeFishron.Value,Projectile.Center);
-            return base.PreDraw(ref lightColor);
+            ModdedShaderHandler shader = EffectsLoader.shaderHandlers["DukeEye"];
+
+            if (!isDashing)
+            {
+                shader = EffectsLoader.shaderHandlers["ColorIndicatorEffect"];
+                shader.setProperties(color: Color.Aquamarine);
+                shader.apply();
+                Vector2 pos = Projectile.Center + vel.SafeNormalize(Vector2.Zero) * 512 * indicatorAnim.currentProgress - Main.screenPosition;
+                rectDash.Draw(pos, rotation: vel.ToRotation(), size: new Vector2(1024, 1000) * indicatorAnim.currentProgress, rotationCenter: pos);
+
+
+
+            }
+            shader = EffectsLoader.shaderHandlers["DukeEye"];
+            shader.setProperties(color: Color.White, dashTexture.Value);
+            shader.apply();
+            float scale = indicatorAnim.currentProgress.X; // lazy lol
+            rectDash.Draw(Projectile.Center + Projectile.velocity.SafeNormalize(Vector2.Zero) * (1024 - 1024 / 4f) - Main.screenPosition, rotation: Projectile.velocity.ToRotation(), size: new Vector2(512 * scale, 256) * scale, rotationCenter: Projectile.Center + Projectile.velocity.SafeNormalize(Vector2.Zero) * (1024 - 1024 / 4f) - Main.screenPosition);
+            rectDash.Draw(Projectile.Center + Projectile.velocity.SafeNormalize(Vector2.Zero) * (1024 - 1024 / 4f) - Main.screenPosition, rotation: Projectile.velocity.ToRotation() + MathHelper.PiOver4 + (isDashing ? 0 : -MathHelper.TwoPi * scale), size: new Vector2(256, 128) * scale, rotationCenter: Projectile.Center + Projectile.velocity.SafeNormalize(Vector2.Zero) * (1024 - 1024 / 4f) - Main.screenPosition);
+            rectDash.Draw(Projectile.Center + Projectile.velocity.SafeNormalize(Vector2.Zero) * (1024 - 1024 / 4f) - Main.screenPosition, rotation: Projectile.velocity.ToRotation() - MathHelper.PiOver4 + (isDashing ? 0 : MathHelper.TwoPi * scale), size: new Vector2(256, 128) * scale, rotationCenter: Projectile.Center + Projectile.velocity.SafeNormalize(Vector2.Zero) * (1024 - 1024 / 4f) - Main.screenPosition);
+
+            if (!isDashing) 
+            {
+                return false;
+            }
+
+
+            shader = EffectsLoader.shaderHandlers["DukeTornado"];
+            shader.apply();
+            rectDash.Draw(Projectile.Center - Main.screenPosition, rotation: Projectile.velocity.ToRotation(), size: new Vector2(2048, 256), rotationCenter: Projectile.Center - Main.screenPosition);
+
+            return false;
+        }
+        public override void OnSpawn(IEntitySource source, Vector2 spawnPosition)
+        {
+            vel = Projectile.velocity;
+            Projectile.velocity *= 0;
+            Projectile.timeLeft = 120;
+            indicatorAnim = new Tween<Vector2>(Vector2.Lerp).TweenProperty([new(Vector2.Zero,Vector2.One,false,TweenEaseType.OutBack,30)]);
+        }
+
+        public override void AI()
+        {
+            if(Projectile.timeLeft == 60) 
+            {
+                isDashing = true;
+                Projectile.velocity = vel;
+                SoundEngine.PlaySound(SoundID.NPCDeath43 with { Pitch = .9f }, Projectile.Center);
+                Projectile.extraUpdates = 1;
+
+            }
         }
 
     }
@@ -196,46 +256,46 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
         }
 
     }
-    public class DukeBiome : ModBiome
-    {
-        public override ModSurfaceBackgroundStyle SurfaceBackgroundStyle => ModContent.GetInstance<DukeBG>();
+    //public class DukeBiome : ModBiome
+    //{
+    //    public override ModSurfaceBackgroundStyle SurfaceBackgroundStyle => ModContent.GetInstance<DukeBG>();
 
-        public override float GetWeight(Player player)
-        {
-            return 1f;
-        }
-        public override SceneEffectPriority Priority => SceneEffectPriority.BiomeHigh;
-        public override bool IsBiomeActive(Player player)
-        {
+    //    public override float GetWeight(Player player)
+    //    {
+    //        return 1f;
+    //    }
+    //    public override SceneEffectPriority Priority => SceneEffectPriority.BiomeHigh;
+    //    public override bool IsBiomeActive(Player player)
+    //    {
 
-            foreach (var npc in Main.ActiveNPCs)
-            {
-                if(npc.type == NPCID.DukeFishron && npc.Distance(player.Center) < 10000) 
-                {
-                    return true;
-                }
-            }
+    //        foreach (var npc in Main.ActiveNPCs)
+    //        {
+    //            if(npc.type == NPCID.DukeFishron && npc.Distance(player.Center) < 10000) 
+    //            {
+    //                return true;
+    //            }
+    //        }
             
-            return false;
-        }
+    //        return false;
+    //    }
 
-        public static void DisableWorldBackgroundElements()
-        {
+    //    public static void DisableWorldBackgroundElements()
+    //    {
 
-            for (int i = 0; i < Main.maxClouds; i++)
-            {
-                Main.cloud[i].active = false;
-            }
-            Main.cloudBGActive = 0;
+    //        for (int i = 0; i < Main.maxClouds; i++)
+    //        {
+    //            Main.cloud[i].active = false;
+    //        }
+    //        Main.cloudBGActive = 0;
 
 
 
-        }
-        public override void OnInBiome(Player player)
-        {
-            //Particle.NewParticle(Particle.ParticleType<DukeLightingBGParticle1>(),Main.screenPosition + new Vector2(Main.rand.Next(0,Main.ScreenSize.X), 0), ParticleTemplates._default with { dontDrawSelf = true, stripShaderID = "DukeLightingBG", vertexRectSize = new Vector2(256), rotation = Vector2.UnitY.ToRotation(), stripWidth = 6 , endOpacity = 1, endSize = 1f, startColor = Color.Cyan, endColor = Color.Turquoise, lifetime = 60,velocity = Vector2.UnitY * 35 });
-        }
-    }
+    //    }
+    //    public override void OnInBiome(Player player)
+    //    {
+    //        //Particle.NewParticle(Particle.ParticleType<DukeLightingBGParticle1>(),Main.screenPosition + new Vector2(Main.rand.Next(0,Main.ScreenSize.X), 0), ParticleTemplates._default with { dontDrawSelf = true, stripShaderID = "DukeLightingBG", vertexRectSize = new Vector2(256), rotation = Vector2.UnitY.ToRotation(), stripWidth = 6 , endOpacity = 1, endSize = 1f, startColor = Color.Cyan, endColor = Color.Turquoise, lifetime = 60,velocity = Vector2.UnitY * 35 });
+    //    }
+    //}
     public class DukeLightingBGParticle1 : Particle
     {
         Vector2 direction = Vector2.Zero;
@@ -267,34 +327,80 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
     {
 
     }
-    public class DukeBG : ModSurfaceBackgroundStyle
+    public class DukeSky : CustomSky
     {
+        bool isActive = false;
+        float fade = 0;
+        public override void Activate(Vector2 position, params object[] args)
+        {
+            isActive = true;
+        }
+
+        public override void Deactivate(params object[] args)
+        {
+            isActive = false;
+        }
+        
+        private static VertexRectangle rect = new VertexRectangle();
+        public override void Draw(SpriteBatch spriteBatch, float minDepth, float maxDepth)
+        {
+            
+            if (maxDepth >= 0f && minDepth < 0f)
+            {
+                ModdedShaderHandler handler = EffectsLoader.shaderHandlers["DukeBG"];
+                handler.setProperties(Color.White, waterBG.Value,waterBG2.Value, shaderData: new Vector4(MathHelper.Lerp(3f,1f, ModUtils.OutExpo(fade,11f)),0,0,0));
+                handler.apply();
+                rect.Draw(Main.Camera.Center + Vector2.Lerp(new Vector2(0, Main.ScreenSize.Y), new Vector2(0, 0), ModUtils.OutExpo(fade, 11f)) - Main.screenPosition, Color.White, Main.ScreenSize.ToVector2(), 0, Main.Camera.Center - Main.screenPosition);
+            }
+        }
         private static Asset<Texture2D> waterBG;
-        public override void Load()
+        private static Asset<Texture2D> waterBG2;
+        public override void OnLoad()
         {
             waterBG = ModContent.Request<Texture2D>(ModTexture.CommonTextureStringPattern + "WaterBG");
+            waterBG2 = ModContent.Request<Texture2D>(ModTexture.CommonTextureStringPattern + "WaterfallEdge");
+
         }
-        public override void ModifyFarFades(float[] fades, float transitionSpeed)
+        public override bool IsActive()
         {
-            fades[0] = MathHelper.Clamp(fades[0] - transitionSpeed, 0, 1);
-            bgY = MathHelper.Clamp(fades[0], 0, 1);
-
+            return fade > 0 || isActive;
         }
-        private static VertexRectangle rect = new();
-        float bgY = 0;
-        public override bool PreDrawCloseBackground(SpriteBatch spriteBatch)
+
+        public override void Reset()
         {
-            ModdedShaderHandler handler = EffectsLoader.shaderHandlers["DukeBG"];
-
-            handler.setProperties(Color.White, waterBG.Value, shaderData: new Vector4(Main.Camera.Center.X, Main.Camera.Center.Y, Main.ScreenSize.X, Main.ScreenSize.Y));
-            handler.apply();
-
-            rect.Draw(Main.Camera.Center - Vector2.Lerp(new Vector2(0, Main.ScreenSize.Y), new Vector2(0,0),1) - Main.screenPosition, Color.White,Main.ScreenSize.ToVector2(),0, Main.Camera.Center - Main.screenPosition);
-
-            return false;
+            isActive = false;
+            fade = 0f;
         }
 
-
+        public override void Update(GameTime gameTime)
+        {
+            if(isActive)
+                fade = Math.Min(1f, 0.01f + fade);
+            else
+                fade = Math.Max(0f, fade - 0.01f);
+        }
+    }
+    public class DukeScene : ModSceneEffect 
+    {
+        public override void Load()
+        {
+            SkyManager.Instance["EO:DukeSky"] = new DukeSky();
+        }
+        public override bool IsSceneEffectActive(Player player)
+        {
+            return NPC.AnyNPCs(NPCID.DukeFishron);
+        }
+        public override void SpecialVisuals(Player player, bool isActive)
+        {
+            if (isActive && !SkyManager.Instance["EO:DukeSky"].IsActive())
+            {
+                SkyManager.Instance.Activate("EO:DukeSky", player.Center);
+            }
+            if (!isActive && SkyManager.Instance["EO:DukeSky"].IsActive()) 
+            {
+                SkyManager.Instance["EO:DukeSky"].Deactivate();
+            }
+        }
     }
     public class DukeRazorbladeVortex : BetterModProjectile 
     {
@@ -383,7 +489,7 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
             
             if(Projectile.timeLeft < 250 && Projectile.timeLeft % 15 == 0) 
             {
-                SoundEngine.PlaySound(SoundID.Item22 with { Pitch = 0.1f, Volume = 0.4f }, Projectile.Center);
+                SoundEngine.PlaySound(SoundID.Item22 with { Pitch = 1f * (1-ProjectileLifeProgress), Volume = 0.4f }, Projectile.Center);
 
             }
 
@@ -412,7 +518,7 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
         }
 
     }
-    public class Duke_AIState : AIState
+    public class Duke_AIState : AIState, IOutlineDrawer
     {
         public override void SetDefaults()
         {
@@ -476,6 +582,8 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
 
             if(dashFramesRemaining > 0)
                 dashFramesRemaining--;
+
+            this.DrawOutline();
         }
 
         internal VertexRectangle rectDash = new();
@@ -488,11 +596,15 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
             dashTexture = ModContent.Request<Texture2D>(ModTexture.CommonTextureStringPattern + "Dash0");
         }
         internal Vector2 currentDashTrailScale = Vector2.Zero;
+
+        public DrawData[] OutlineDrawDatas => [GetSprite() ?? Placeholders.DrawDataPlaceholder];
+        public int OutlineSteps => 4;
+        public float OutlineOffset => 6 * ModUtils.Frac((float)(-Main.timeForVisualEffects) * 0.1f);
+
         public override bool StatePreDraw(ref DrawData mainSprite, SpriteBatch spriteBatch, Vector2 screenPos, Color drawColor)
         {
-
             spriteBatch.End();
-            spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Additive, Main.DefaultSamplerState, DepthStencilState.None, Main.Rasterizer, null);
+            spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, Main.DefaultSamplerState, DepthStencilState.None, Main.Rasterizer, null, Main.Transform);
 
             return true;
         }
@@ -503,7 +615,7 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
 
             if (npc.ai[2] == 0)
                 return;
- ModdedShaderHandler shader = EffectsLoader.shaderHandlers["DukeTornado"];
+            ModdedShaderHandler shader = EffectsLoader.shaderHandlers["DukeTornado"];
 
             for(float i = 0.2f; i < 1; i += 0.1f) 
             {
@@ -519,6 +631,10 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
             spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, Main.DefaultSamplerState, DepthStencilState.None, Main.Rasterizer, null);
         }
 
+        public Color SetOutlineColor(float progress)
+        {
+            return Color.Lerp(Color.Blue,Color.Turquoise,progress);
+        }
     }
     public class Duke_Phase2_Transition : Duke_AIState
     {
@@ -798,10 +914,10 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
             if (counter > 60 && dashFramesRemaining <= 0)
             {
                 npc.velocity = Vector2.Zero;
-                if (dashCounter >= 1555)
+                if (dashCounter >= 14)
                 {
                     dashCounter = 0;
-                    ChangeState<Duke_Circle1>();
+                    ChangeState<Duke_Super_Dash>();
                     return;
                 }
 
@@ -821,53 +937,59 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
     {
         int dashCounter = 0;
         bool isSuper = false;
-
+        Vector2 preDashPos = Vector2.Zero;
+        int projCountRemaining = 0;
         public override void OnStateUpdate(CommonNPCInfo info)
         {
 
-            if(counter < 35) 
+            if (counter < 15)
             {
+                npc.velocity = npc.DirectionTo(Target.Center + Target.velocity) * MathHelper.Clamp(MathHelper.Lerp(1f, -.5f, (counter / 15f)) * 75, -75, 75);
+                
                 dashDir = npc.DirectionTo(Target.Center + Target.velocity * 0.25f);
             }
 
-            if (counter < 45)
-            {
-                npc.Center = npc.Center.MoveTowards(Target.Center, Target.Center.Distance(npc.Center) / 850 * 14f);
 
-                npc.rotation = npc.rotation.AngleTowards(dashDir.ToRotation(),0.2f);
+
+            if (counter < 30)
+            {
+                npc.Center = npc.Center.MoveTowards(Target.Center, Target.Center.Distance(npc.Center) / 1500 * 38f);
+
+                npc.rotation = npc.rotation.AngleTowards(dashDir.ToRotation(), 1f);
                 LookAtNpcRot();
                 return;
             }
 
-            if (counter == 45)
+            if (counter == 30)
             {
-
-
-                DukeDash(15);
-                npc.velocity *= 1.25f;
+                preDashPos = npc.Center;
+                projCountRemaining = 8;
+                DukeDash(30);
             }
-
-            if (CounterBetween(42, 60))
+            if (counter > 30 && counter % 6 == 0 && projCountRemaining > 0)
             {
-                npc.velocity *= 0.95f;
+                Vector2 pos = Vector2.Lerp(preDashPos, preDashPos + new Vector2(dashDir.X, dashDir.Y) * 5000, 1 - projCountRemaining / 8f);
+                NPCReworkerFSM.NewProjectileWithMPCheck(npc.GetSource_FromThis(), pos, pos.DirectionTo(Target.Center + Target.velocity * 25) * 80,ModContent.ProjectileType<DukeShadows>(),npc.damage,15);
+                projCountRemaining--;
             }
-
-            if (counter > 60 && dashFramesRemaining <= 0)
+            if (counter > 42 && dashFramesRemaining <= 0)
             {
-                npc.velocity = Vector2.Zero;
+                npc.velocity *= 0.91f;
+
+                if (counter < 120)
+                    return;
+
+
                 if (dashCounter >= 7)
                 {
                     dashCounter = 0;
-                    ChangeState<Duke_Dash>();
+                    ChangeState<Duke_Circle1>();
                     return;
                 }
 
-                if(dashCounter == 3 || dashCounter == 6)
-                    isSuper = true;
-                ChangeState<Duke_Dash>();
+                ChangeState<Duke_Super_Dash>();
                 dashCounter++;
             }
         }
-
     }
 }

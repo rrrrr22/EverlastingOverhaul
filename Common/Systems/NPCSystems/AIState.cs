@@ -17,6 +17,7 @@ namespace EverlastingOverhaul.Common.Systems.NPCReworker
 {
     public class AIState : ILoadable
     {
+        public bool canContactDamage = true;
         public int npcID = -1;
         public int npcWhoAmI = -1;
         public int preStateChangeState = -1;
@@ -34,9 +35,20 @@ namespace EverlastingOverhaul.Common.Systems.NPCReworker
         public int spriteDirectionY = 1;
         public int spriteDirectionX = 1;
         public SpriteEffects spriteEffect = SpriteEffects.None;
-        public DrawData UpdateCurrentSprite()
+        public DrawData? BaseSprite = null;
+        public void UpdateCurrentSprite()
         {
-            return new DrawData((npcTexture == null ? TextureAssets.Npc[npcID].Value : npcTexture.Value), Vector2.Zero, frameRect, Color.White, npc.rotation, new Vector2(frameWidth / 2f, frameHeight / 2f), npc.scale, spriteEffect);
+            BaseSprite = new DrawData((npcTexture == null ? TextureAssets.Npc[npcID].Value : npcTexture.Value), Vector2.Zero, frameRect, Color.White, npc.rotation, new Vector2(frameWidth / 2f, frameHeight / 2f), npc.scale, spriteEffect);
+        }
+        public DrawData? GetSprite()
+        {
+            if (BaseSprite.HasValue)
+            {
+                var sprite = BaseSprite.Value;
+                sprite.position += npc.Center - Main.screenPosition;
+                return sprite;
+            }
+            return null;
         }
 
         public void UpdateSpriteFields(int startingFrame = 0, int maxFrames = -1, int animationSpeed = 28, int frameHeight = -1)
