@@ -73,7 +73,7 @@ float2 strikeShape(float2 uv)
 
 float2 Rotate(float2 uv, float angle, float2 pivot)
 {
-    float2x2 rotationMatrix = float2x2(cos(angle), sin(angle), -sin(angle),cos(angle));
+    float2x2 rotationMatrix = float2x2(cos(angle), sin(angle), -sin(angle), cos(angle));
     uv -= pivot;
     float2 r = mul(rotationMatrix, uv);
     r += pivot;
@@ -83,18 +83,13 @@ float2 Rotate(float2 uv, float angle, float2 pivot)
 
 float3 palette(float t)
 {
-    float3 a = float3(0.520
-    , 1.011
-    , 0.679);
-    float3 b = float3(0.090
-    , 0.301
-    , 0.108);
-    float3 c = float3(0.771
-    , 0.268
-    , 1.258);
-    float3 d = float3(3.301
-    , 3.472
-    , 2.260);
+    float3 a = float3(-0.462, 3.078, 0.878);
+    float3 b = float3(1.564, 2.450, -0.112);
+    float3 c = float3(1.860
+    , 1.208, -6.142);
+    float3 d = float3(6.285
+    , 6.285
+    , 6.813);
 
     return a + b * cos(6.28318 * (c * t + d));
 }
@@ -106,19 +101,19 @@ float4 ShaderPS(float4 vertexColor : COLOR0, float2 texCoords : TEXCOORD0) : COL
     shineTex += tex2D(image2, Rotate(texCoords, shaderData.x * 1.6, float2(0.5, .5)));
     tex.a *= tex.r;
     uv = Rotate(uv, shaderData.x, float2(0.5, .5));
-    tex.rgb = tex.r * palette((uv.x / 2 + uv.y / 4) - shineTex.r) * shineTex.r;
+    tex.rgb = tex.r * palette(shineTex.r) * shineTex.r * float3(1, .3, 1);
     
     //motion blur
 
-    float4 texBlur = tex2Dlod(image1, float4(uv.x, uv.y,3.5,.2)).r;
+    float4 texBlur = tex2Dlod(image1, float4(uv.x, uv.y, 3.5, .2)).r;
     for (float i = 3.141519 * 2; i > 0; i -= 3.141519 / 8)
     {
-        uv = Rotate(uv, i, float2(.5,.5));
+        uv = Rotate(uv, i, float2(.5, .5));
         texBlur *= tex2D(image1, float2(uv.x, uv.y)).a;
 
     }
     
-        return tex *shaderData.y;
+    return tex * shaderData.y;
 }
 
 technique t0

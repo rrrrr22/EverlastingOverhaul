@@ -141,6 +141,7 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
     }
     public class DukeShadows : BetterModProjectile
     {
+        public override string Texture => ModTexture.CommonTextureStringPattern + "Bubble0";
         private static Asset<Texture2D> dashTexture;
         Vector2 vel = Vector2.Zero;
         Tween<Vector2> indicatorAnim;
@@ -152,12 +153,18 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
         private static VertexRectangle rectDash = new();
         public override bool PreDraw(ref Color lightColor)
         {
+            Main.spriteBatch.End();
+            Main.spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Additive, Main.DefaultSamplerState, DepthStencilState.None, Main.Rasterizer, null, Main.GameViewMatrix.ZoomMatrix);
+
+
             ModdedShaderHandler shader = EffectsLoader.shaderHandlers["DukeEye"];
 
             if (!isDashing)
             {
+                Main.EntitySpriteDraw(TextureAssets.Projectile[Type].Value, Projectile.Center - Main.screenPosition, null, Color.Cyan, 0, TextureAssets.Projectile[Type].Size() / 2f, indicatorAnim.currentProgress * .25f, SpriteEffects.None);
+
                 shader = EffectsLoader.shaderHandlers["ColorIndicatorEffect"];
-                shader.setProperties(color: Color.Aquamarine);
+                shader.setProperties(color: Color.Turquoise);
                 shader.apply();
                 Vector2 pos = Projectile.Center + vel.SafeNormalize(Vector2.Zero) * 512 * indicatorAnim.currentProgress - Main.screenPosition;
                 rectDash.Draw(pos, rotation: vel.ToRotation(), size: new Vector2(1024, 1000) * indicatorAnim.currentProgress, rotationCenter: pos);
@@ -166,7 +173,7 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
 
             }
             shader = EffectsLoader.shaderHandlers["DukeEye"];
-            shader.setProperties(color: Color.White, dashTexture.Value);
+            shader.setProperties(color: Color.Turquoise, dashTexture.Value);
             shader.apply();
             float scale = indicatorAnim.currentProgress.X; // lazy lol
             rectDash.Draw(Projectile.Center + Projectile.velocity.SafeNormalize(Vector2.Zero) * (1024 - 1024 / 4f) - Main.screenPosition, rotation: Projectile.velocity.ToRotation(), size: new Vector2(512 * scale, 256) * scale, rotationCenter: Projectile.Center + Projectile.velocity.SafeNormalize(Vector2.Zero) * (1024 - 1024 / 4f) - Main.screenPosition);
@@ -181,9 +188,14 @@ namespace EverlastingOverhaul.Common.NPCsOverhaul.Bosses.DukeFishorn
 
             shader = EffectsLoader.shaderHandlers["DukeTornado"];
             shader.apply();
-            rectDash.Draw(Projectile.Center - Main.screenPosition, rotation: Projectile.velocity.ToRotation(), size: new Vector2(2048, 256), rotationCenter: Projectile.Center - Main.screenPosition);
+            rectDash.Draw(Projectile.Center - Main.screenPosition, rotation: Projectile.velocity.ToRotation(), size: new Vector2(2048, 128), rotationCenter: Projectile.Center - Main.screenPosition);
 
             return false;
+        }
+        public override void PostDraw(Color lightColor)
+        {
+            Main.spriteBatch.End();
+            Main.spriteBatch.Begin(SpriteSortMode.Deferred,BlendState.AlphaBlend,Main.DefaultSamplerState,DepthStencilState.None,Main.Rasterizer,null,Main.GameViewMatrix.ZoomMatrix);
         }
         public override void OnSpawn(IEntitySource source, Vector2 spawnPosition)
         {

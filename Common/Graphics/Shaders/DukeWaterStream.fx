@@ -44,20 +44,16 @@ float2 turbulence(float2 p)
     
     return p;
 }
+
 float3 palette(float t)
 {
-    float3 a = float3(0.520
-    , 1.011
-    , 0.679);
-    float3 b = float3(0.090
-    , 0.301
-    , 0.108);
-    float3 c = float3(0.771
-    , 0.268
-    , 1.258);
-    float3 d = float3(3.301
-    , 3.472
-    , 2.260);
+    float3 a = float3(-0.462, 3.078, 0.878);
+    float3 b = float3(1.564, 2.450, -0.112);
+    float3 c = float3(1.860
+    , 1.208, -6.142);
+    float3 d = float3(6.285
+    , 6.285
+    , 6.813);
 
     return a + b * cos(6.28318 * (c * t + d));
 }
@@ -72,7 +68,7 @@ float4 ShaderPS(float4 vertexColor : COLOR0, float2 texCoords : TEXCOORD0) : COL
       
     distanceUV *= smoothstep(1, 0, length(texCoords * 2 - 1) * 1);
     float pulse = sin(time * 45) * 0.3 + 1;
-    float3 col = palette(centeredUV.x / 2 + centeredUV.y / 4);
+    float3 col = palette(centeredUV.x / 2 + centeredUV.y / 4 - 150);
     float2 bolt = (distanceUV * pulse);
     float3 highestRGBValue;
     if (col.r > col.b)
